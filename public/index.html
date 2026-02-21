@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>JobSpy — Job Search API</title>
+  <title>Job API</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -309,10 +309,12 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 8px;
       padding-top: 10px;
       border-top: 1px solid var(--border);
     }
     .job-date { font-size: 12px; color: var(--subtext); }
+    .job-actions { display: flex; align-items: center; gap: 8px; }
     .job-link {
       font-size: 13px;
       font-weight: 600;
@@ -323,6 +325,139 @@
       gap: 3px;
     }
     .job-link:hover { opacity: .7; }
+
+    /* ── Details button ── */
+    .btn-details {
+      height: 32px;
+      padding: 0 14px;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--subtext);
+      cursor: pointer;
+      font-family: inherit;
+      transition: all .15s;
+    }
+    .btn-details:hover { border-color: var(--blue); color: var(--blue); background: var(--tag-bg); }
+
+    /* ── Modal overlay ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.5);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 700px;
+      max-height: 88vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 24px 80px rgba(0,0,0,.22);
+      animation: modalIn .22s cubic-bezier(.32,1,.4,1);
+    }
+    @keyframes modalIn { from { transform: scale(.96) translateY(12px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+    .modal-handle {
+      display: none;
+    }
+    .modal-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .modal-title-block { flex: 1; min-width: 0; }
+    .modal-title { font-size: 20px; font-weight: 700; letter-spacing: -.3px; line-height: 1.25; }
+    .modal-company { font-size: 14px; color: var(--subtext); margin-top: 4px; }
+    .modal-close {
+      width: 32px; height: 32px; flex-shrink: 0;
+      background: var(--bg);
+      border: none; border-radius: 50%;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; color: var(--subtext);
+      transition: background .15s;
+    }
+    .modal-close:hover { background: var(--border); }
+    .modal-body {
+      overflow-y: auto;
+      padding: 20px 24px 32px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .detail-section h4 {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      color: var(--subtext);
+      margin-bottom: 10px;
+    }
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 10px;
+    }
+    .detail-item {
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+    }
+    .detail-item .di-label { font-size: 11px; color: var(--subtext); font-weight: 500; margin-bottom: 3px; }
+    .detail-item .di-value { font-size: 14px; font-weight: 600; word-break: break-word; }
+    .detail-description {
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      font-size: 14px;
+      line-height: 1.65;
+      color: var(--text);
+      max-height: 320px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .detail-description p { margin-bottom: 8px; }
+    .detail-description ul, .detail-description ol { margin: 6px 0 6px 18px; }
+    .detail-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 20px;
+      background: var(--blue);
+      color: #fff;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background .15s;
+    }
+    .detail-link:hover { background: var(--blue-dark); }
+    .tag-list { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tag-list span {
+      background: var(--tag-bg);
+      color: var(--tag-text);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
 
     /* ── Error / Empty ── */
     .message-box {
@@ -350,7 +485,7 @@
 <body>
 
 <nav>
-  <span class="nav-logo">Job<span>Spy</span></span>
+  <span class="nav-logo">Job <span>API</span></span>
   <span class="nav-badge">API</span>
 </nav>
 
@@ -472,7 +607,24 @@
 
 </div>
 
+<!-- Detail Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+  <div class="modal" id="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title-block">
+        <div class="modal-title" id="mTitle"></div>
+        <div class="modal-company" id="mCompany"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="mBody"></div>
+  </div>
+</div>
+
 <script>
+  let allJobs = [];
+
   // Toggle site chips
   document.querySelectorAll('.site-chip').forEach(chip => {
     chip.addEventListener('click', () => {
@@ -512,7 +664,7 @@
     return [loc.city, loc.state, loc.country].filter(Boolean).join(', ') || null;
   }
 
-  function renderCard(job) {
+  function renderCard(job, idx) {
     const salary = fmtSalary(job.salary);
     const location = fmtLocation(job.location);
     const date = fmtDate(job.date_posted);
@@ -535,10 +687,132 @@
         ${meta ? `<div class="job-meta">${meta}</div>` : ''}
         <div class="job-footer">
           <span class="job-date">${date ? `${CLOCK} ${date}` : ''}</span>
-          ${job.job_url ? `<a class="job-link" href="${esc(job.job_url)}" target="_blank" rel="noopener">View →</a>` : ''}
+          <div class="job-actions">
+            <button class="btn-details" onclick="showDetail(${idx})">Details</button>
+            ${job.job_url ? `<a class="job-link" href="${esc(job.job_url)}" target="_blank" rel="noopener">Apply →</a>` : ''}
+          </div>
         </div>
       </div>`;
   }
+
+  function showDetail(idx) {
+    const job = allJobs[idx];
+    if (!job) return;
+
+    document.getElementById('mTitle').textContent = job.title || 'Untitled';
+    document.getElementById('mCompany').textContent = [
+      job.company,
+      job.company_industry,
+    ].filter(Boolean).join(' · ');
+
+    const rows = [];
+
+    // ── Header meta row ──
+    const headerItems = [
+      ['Site',        job.site],
+      ['Job Type',    job.job_type],
+      ['Level',       job.job_level],
+      ['Remote',      job.is_remote != null ? (job.is_remote ? 'Yes ✓' : 'No') : null],
+      ['Location',    fmtLocation(job.location)],
+      ['Date Posted', fmtDate(job.date_posted)],
+    ].filter(([,v]) => v != null && v !== '');
+    if (headerItems.length) {
+      rows.push(`<div class="detail-section"><div class="detail-grid">${
+        headerItems.map(([l,v]) => `<div class="detail-item"><div class="di-label">${esc(l)}</div><div class="di-value">${esc(String(v))}</div></div>`).join('')
+      }</div></div>`);
+    }
+
+    // ── Salary ──
+    if (job.salary && Object.values(job.salary).some(v => v != null)) {
+      const s = job.salary;
+      const salItems = [
+        ['Min',      s.min_amount != null ? Number(s.min_amount).toLocaleString() : null],
+        ['Max',      s.max_amount != null ? Number(s.max_amount).toLocaleString() : null],
+        ['Interval', s.interval],
+        ['Currency', s.currency],
+        ['Source',   s.salary_source],
+      ].filter(([,v]) => v != null && v !== '');
+      if (salItems.length) {
+        rows.push(`<div class="detail-section"><h4>Compensation</h4><div class="detail-grid">${
+          salItems.map(([l,v]) => `<div class="detail-item"><div class="di-label">${esc(l)}</div><div class="di-value">${esc(String(v))}</div></div>`).join('')
+        }</div></div>`);
+      }
+    }
+
+    // ── Company ──
+    const coItems = [
+      ['Industry',   job.company_industry],
+      ['Employees',  job.company_employees_label],
+      ['Revenue',    job.company_revenue_label],
+      ['Country',    job.company_country],
+    ].filter(([,v]) => v != null && v !== '');
+    const hasCoSection = coItems.length || job.company_url || job.company_description;
+    if (hasCoSection) {
+      let coHtml = '';
+      if (coItems.length) coHtml += `<div class="detail-grid" style="margin-bottom:10px">${coItems.map(([l,v]) => `<div class="detail-item"><div class="di-label">${esc(l)}</div><div class="di-value">${esc(String(v))}</div></div>`).join('')}</div>`;
+      if (job.company_url) coHtml += `<a class="detail-link" style="margin-bottom:10px" href="${esc(job.company_url)}" target="_blank" rel="noopener">Company Profile →</a>`;
+      if (job.company_description) coHtml += `<div class="detail-description" style="margin-top:8px">${esc(job.company_description)}</div>`;
+      rows.push(`<div class="detail-section"><h4>Company</h4>${coHtml}</div>`);
+    }
+
+    // ── Skills ──
+    if (Array.isArray(job.skills) && job.skills.length) {
+      rows.push(`<div class="detail-section"><h4>Required Skills</h4><div class="tag-list">${
+        job.skills.map(s => `<span>${esc(s)}</span>`).join('')
+      }</div></div>`);
+    }
+
+    // ── Contact Emails ──
+    if (Array.isArray(job.emails) && job.emails.length) {
+      rows.push(`<div class="detail-section"><h4>Contact Emails</h4><div class="tag-list">${
+        job.emails.map(e => `<span>${esc(e)}</span>`).join('')
+      }</div></div>`);
+    }
+
+    // ── Extra fields (Naukri etc.) ──
+    const extraItems = [
+      ['Experience',  job.experience_range],
+      ['Rating',      job.company_rating],
+      ['Reviews',     job.company_reviews_count],
+      ['Vacancies',   job.vacancy_count],
+      ['WFH Type',    job.work_from_home_type],
+    ].filter(([,v]) => v != null && v !== '');
+    if (extraItems.length) {
+      rows.push(`<div class="detail-section"><h4>Additional Info</h4><div class="detail-grid">${
+        extraItems.map(([l,v]) => `<div class="detail-item"><div class="di-label">${esc(l)}</div><div class="di-value">${esc(String(v))}</div></div>`).join('')
+      }</div></div>`);
+    }
+
+    // ── Job description ──
+    if (job.description) {
+      const isHtml = /<[a-z][\s\S]*>/i.test(job.description);
+      rows.push(`<div class="detail-section"><h4>Job Description</h4><div class="detail-description">${
+        isHtml ? job.description : esc(job.description)
+      }</div></div>`);
+    }
+
+    // ── Apply CTA ──
+    if (job.job_url) {
+      rows.push(`<div style="padding-top:4px"><a class="detail-link" href="${esc(job.job_url)}" target="_blank" rel="noopener">Apply / View Posting →</a></div>`);
+    }
+
+    document.getElementById('mBody').innerHTML = rows.join('');
+    document.getElementById('modalOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function handleOverlayClick(e) {
+    if (e.target === document.getElementById('modalOverlay')) closeModal();
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModal();
+  });
 
   function esc(s) {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -579,7 +853,8 @@
       if (jobs.length === 0) {
         document.getElementById('emptyBox').style.display = 'block';
       } else {
-        document.getElementById('jobsGrid').innerHTML = jobs.map(renderCard).join('');
+        allJobs = jobs;
+        document.getElementById('jobsGrid').innerHTML = jobs.map((j, i) => renderCard(j, i)).join('');
         document.getElementById('resultsTitle').textContent = `Jobs`;
         document.getElementById('countBadge').textContent = `${jobs.length} found`;
         document.getElementById('results-section').style.display = 'block';
@@ -595,9 +870,10 @@
     }
   }
 
-  // Allow Enter key to trigger search
+  // Allow Enter key to trigger search (not when modal is open)
   document.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !document.getElementById('searchBtn').disabled) search();
+    if (e.key === 'Enter' && !document.getElementById('searchBtn').disabled
+        && !document.getElementById('modalOverlay').classList.contains('open')) search();
   });
 </script>
 </body>
