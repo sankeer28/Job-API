@@ -14,9 +14,9 @@ from typing import Any, List, Optional
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pandas as pd
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from jobspy import scrape_jobs
 from pydantic import BaseModel, Field
 
@@ -35,9 +35,15 @@ app.add_middleware(
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
-VALID_SITES    = {"linkedin", "indeed", "zip_recruiter", "glassdoor", "google", "bayt", "bdjobs", "naukri"}
-VALID_TYPES    = {None, "fulltime", "parttime", "internship", "contract"}
-VALID_FORMATS  = {"markdown", "html"}
+VALID_SITES   = {"linkedin", "indeed", "zip_recruiter", "glassdoor", "google", "bayt", "bdjobs", "naukri"}
+VALID_TYPES   = {None, "fulltime", "parttime", "internship", "contract"}
+VALID_FORMATS = {"markdown", "html"}
+
+# Vercel CWD is always the project root; locally it's wherever you run uvicorn from.
+# Fall back to the directory two levels above api/index.py just in case.
+_cwd_public = os.path.join(os.getcwd(), "public")
+_rel_public = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "public")
+PUBLIC_DIR  = _cwd_public if os.path.isdir(_cwd_public) else _rel_public
 
 
 # ── Pydantic request model (POST body) ────────────────────────────────────────
@@ -239,6 +245,20 @@ async def _run_scrape(params: dict):
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
+
+_PAGES = {"index.html", "docs.html", "playground.html"}
+
+@app.get("/", include_in_schema=False)
+@app.get("/{page}.html", include_in_schema=False)
+async def serve_html(page: str = "index"):
+    filename = f"{page}.html"
+    if filename not in _PAGES:
+        raise HTTPException(404, "Not found")
+    path = os.path.join(PUBLIC_DIR, filename)
+    if os.path.exists(path):
+        return FileResponse(path, media_type="text/html")
+    raise HTTPException(500, f"File not found on server: {path}")
+
 
 @app.get("/api/health", tags=["Meta"])
 async def health():
