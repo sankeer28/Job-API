@@ -38,7 +38,14 @@ app.add_middleware(
 VALID_SITES    = {"linkedin", "indeed", "zip_recruiter", "glassdoor", "google", "bayt", "bdjobs", "naukri"}
 VALID_TYPES    = {None, "fulltime", "parttime", "internship", "contract"}
 VALID_FORMATS  = {"markdown", "html"}
-PUBLIC_DIR     = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "public")
+
+_here      = os.path.dirname(os.path.abspath(__file__))
+PUBLIC_DIR = os.path.join(os.path.dirname(_here), "public")
+if not os.path.isdir(PUBLIC_DIR):
+    # Vercel may run from /var/task with public/ alongside api/
+    PUBLIC_DIR = os.path.join(_here, "public")
+if not os.path.isdir(PUBLIC_DIR):
+    PUBLIC_DIR = os.path.join(os.getcwd(), "public")
 
 
 # ── Pydantic request model (POST body) ────────────────────────────────────────
