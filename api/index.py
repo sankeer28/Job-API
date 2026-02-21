@@ -14,9 +14,9 @@ from typing import Any, List, Optional
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pandas as pd
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from jobspy import scrape_jobs
 from pydantic import BaseModel, Field
 
@@ -38,9 +38,6 @@ app.add_middleware(
 VALID_SITES    = {"linkedin", "indeed", "zip_recruiter", "glassdoor", "google", "bayt", "bdjobs", "naukri"}
 VALID_TYPES    = {None, "fulltime", "parttime", "internship", "contract"}
 VALID_FORMATS  = {"markdown", "html"}
-
-_here      = os.path.dirname(os.path.abspath(__file__))
-PUBLIC_DIR = os.path.join(_here, "public")
 
 
 # ── Pydantic request model (POST body) ────────────────────────────────────────
@@ -242,24 +239,6 @@ async def _run_scrape(params: dict):
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
-
-@app.get("/", include_in_schema=False)
-async def index():
-    html = os.path.join(PUBLIC_DIR, "index.html")
-    if os.path.exists(html):
-        return FileResponse(html, media_type="text/html")
-    return JSONResponse({"name": "Job API", "version": "2.0.0", "status": "ok"})
-
-
-@app.get("/docs.html", include_in_schema=False)
-@app.get("/playground.html", include_in_schema=False)
-async def static_pages(request: Request):
-    filename = request.url.path.lstrip("/")
-    path = os.path.join(PUBLIC_DIR, filename)
-    if os.path.exists(path):
-        return FileResponse(path, media_type="text/html")
-    raise HTTPException(404, "Not found")
-
 
 @app.get("/api/health", tags=["Meta"])
 async def health():
