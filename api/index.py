@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import pandas as pd
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from jobspy import scrape_jobs
 from pydantic import BaseModel, Field
 
@@ -39,9 +39,17 @@ VALID_SITES   = {"linkedin", "indeed", "zip_recruiter", "glassdoor", "google", "
 VALID_TYPES   = {None, "fulltime", "parttime", "internship", "contract"}
 VALID_FORMATS = {"markdown", "html"}
 
-# HTML files live in api/public/ so they're always bundled with the function.
-_here      = os.path.dirname(os.path.abspath(__file__))
-PUBLIC_DIR = os.path.join(_here, "public")
+# HTML files embedded as Python strings — guaranteed to be bundled.
+try:
+    from api.templates import INDEX_HTML, DOCS_HTML, PLAYGROUND_HTML
+except ImportError:
+    from templates import INDEX_HTML, DOCS_HTML, PLAYGROUND_HTML
+
+_PAGES = {
+    "index": INDEX_HTML,
+    "docs": DOCS_HTML,
+    "playground": PLAYGROUND_HTML,
+}
 
 
 # ── Pydantic request model (POST body) ────────────────────────────────────────
@@ -244,47 +252,19 @@ async def _run_scrape(params: dict):
 
 # ── Routes ────────────────────────────────────────────────────────────────────
 
-_PAGES = {"index.html", "docs.html", "playground.html"}
-
 @app.get("/", include_in_schema=False)
 @app.get("/{page}.html", include_in_schema=False)
 async def serve_html(page: str = "index"):
-    filename = f"{page}.html"
-    if filename not in _PAGES:
+    html = _PAGES.get(page)
+    if html is None:
         raise HTTPException(404, "Not found")
-    path = os.path.join(PUBLIC_DIR, filename)
-    if os.path.exists(path):
-        return FileResponse(path, media_type="text/html")
-    raise HTTPException(500, f"File not found on server: {path}")
+    return HTMLResponse(content=html)
 
 
 @app.get("/api/health", tags=["Meta"])
 async def health():
     """API health check."""
     return {"status": "ok", "service": "Job API", "version": "2.0.0"}
-
-
-@app.get("/api/debug-files", include_in_schema=False)
-async def debug_files():
-    """Temporary: show what exists on the server."""
-    cwd = os.getcwd()
-    here = os.path.dirname(os.path.abspath(__file__))
-    result = {"cwd": cwd, "here": here, "PUBLIC_DIR": PUBLIC_DIR, "public_exists": os.path.isdir(PUBLIC_DIR)}
-    # List top-level items
-    try:
-        result["cwd_contents"] = os.listdir(cwd)
-    except Exception as e:
-        result["cwd_contents"] = str(e)
-    # List public/ if it exists
-    if os.path.isdir(PUBLIC_DIR):
-        result["public_contents"] = os.listdir(PUBLIC_DIR)
-    # Also check /var/task
-    for d in ["/var/task", "/var/task/public", "/var/task/api"]:
-        try:
-            result[d] = os.listdir(d)
-        except Exception as e:
-            result[d] = str(e)
-    return result
 
 
 @app.get("/api/sites", tags=["Meta"])
