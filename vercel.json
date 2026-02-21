@@ -1,10 +1,9 @@
 {
-  "rewrites": [
-    { "source": "/api/jobs", "destination": "/api/index.py" }
+  "builds": [
+    { "src": "api/index.py", "use": "@vercel/python" }
   ],
-  "functions": {
-    "api/index.py": {
-      "maxDuration": 60
-    }
-  }
+  "routes": [
+    { "src": "/api/jobs(.*)", "dest": "/api/index.py" },
+    { "src": "/(.*)", "dest": "/public/index.html" }
+  ]
 }
