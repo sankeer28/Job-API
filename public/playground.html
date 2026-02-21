@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Playground — Job API</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:        #007AFF;
+      --blue-dark:   #0062CC;
+      --bg:          #F5F5F7;
+      --surface:     #FFFFFF;
+      --border:      #D2D2D7;
+      --text:        #1D1D1F;
+      --subtext:     #6E6E73;
+      --tag-bg:      #F0F4FF;
+      --tag-text:    #0051D6;
+      --green:       #34C759;
+      --red:         #FF3B30;
+      --orange:      #FF9500;
+      --radius:      14px;
+      --radius-sm:   8px;
+      --shadow-card: 0 1px 6px rgba(0,0,0,.06), 0 4px 24px rgba(0,0,0,.06);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Nav ── */
+    nav {
+      background: rgba(255,255,255,.92);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      border-bottom: 1px solid rgba(0,0,0,.06);
+      flex-shrink: 0;
+      padding: 0 24px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 10;
+    }
+    .nav-logo {
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: -.3px;
+      color: var(--text);
+      text-decoration: none;
+    }
+    .nav-logo span { color: var(--blue); }
+    .nav-links { display: flex; align-items: center; gap: 4px; }
+    .nav-link {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--subtext);
+      text-decoration: none;
+      padding: 6px 12px;
+      border-radius: 8px;
+      transition: background .15s, color .15s;
+    }
+    .nav-link:hover { background: var(--bg); color: var(--text); }
+    .nav-link.active { color: var(--blue); background: var(--tag-bg); }
+
+    /* ── Layout ── */
+    .pg-layout {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── Request panel ── */
+    .req-panel {
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--border);
+      background: var(--surface);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .panel-title {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      color: var(--subtext);
+    }
+
+    /* ── URL bar ── */
+    .url-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+      flex-shrink: 0;
+    }
+    .method-select {
+      height: 36px;
+      padding: 0 10px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 700;
+      font-family: inherit;
+      color: var(--blue);
+      background: var(--surface);
+      cursor: pointer;
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+      min-width: 72px;
+    }
+    .url-input {
+      flex: 1;
+      height: 36px;
+      padding: 0 12px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-family: "SF Mono", "Fira Code", monospace;
+      color: var(--text);
+      background: var(--surface);
+      outline: none;
+    }
+    .url-input:focus { border-color: var(--blue); }
+    .btn-send {
+      height: 36px;
+      padding: 0 20px;
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background .15s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .btn-send:hover { background: var(--blue-dark); }
+    .btn-send:disabled { background: #B0C4E8; cursor: not-allowed; }
+    .send-spinner {
+      display: none;
+      width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+    }
+    .btn-send.loading .send-spinner { display: block; }
+    .btn-send.loading .send-icon { display: none; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Tabs ── */
+    .tab-bar {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .tab-item {
+      font-size: 13px;
+      font-weight: 500;
+      padding: 10px 16px;
+      color: var(--subtext);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: color .12s;
+      user-select: none;
+    }
+    .tab-item:hover { color: var(--text); }
+    .tab-item.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+    /* ── Scrollable form ── */
+    .tab-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .tab-content.hidden { display: none; }
+
+    /* ── Form field ── */
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    .field label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--subtext);
+    }
+    .field input, .field select, .field textarea {
+      height: 38px;
+      padding: 0 12px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-family: inherit;
+      color: var(--text);
+      background: var(--surface);
+      outline: none;
+      transition: border-color .15s;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(0,122,255,.1);
+    }
+    .field input::placeholder { color: #AEAEB2; }
+    .field select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236E6E73' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 30px;
+    }
+
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    /* Sites chips inside form */
+    .sites-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+    .site-chip {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 12px;
+      border-radius: 20px; border: 1.5px solid var(--border);
+      font-size: 12px; font-weight: 500; color: var(--subtext);
+      cursor: pointer; user-select: none; transition: all .12s;
+      background: var(--surface);
+    }
+    .site-chip:hover { border-color: var(--blue); color: var(--blue); }
+    .site-chip input[type="checkbox"] { display: none; }
+    .site-chip.active { background: var(--tag-bg); border-color: var(--blue); color: var(--blue); }
+    .site-chip .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--blue); opacity: 0; transition: opacity .12s; }
+    .site-chip.active .dot { opacity: 1; }
+
+    .form-section-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      color: var(--subtext);
+      padding: 4px 0 2px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 2px;
+    }
+
+    /* JSON editor */
+    .json-editor {
+      width: 100%;
+      height: 100%;
+      border: none;
+      padding: 16px;
+      font-family: "SF Mono", "Fira Code", monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text);
+      background: var(--bg);
+      resize: none;
+      outline: none;
+    }
+    .json-editor-wrap {
+      flex: 1;
+      overflow: hidden;
+      display: none;
+      flex-direction: column;
+    }
+    .json-editor-wrap.visible { display: flex; }
+    .json-toolbar {
+      padding: 8px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+      background: var(--surface);
+    }
+    .json-tool-btn {
+      font-size: 12px;
+      font-weight: 500;
+      padding: 4px 10px;
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      background: var(--surface);
+      color: var(--subtext);
+      transition: all .12s;
+    }
+    .json-tool-btn:hover { border-color: var(--blue); color: var(--blue); }
+
+    /* ── Response panel ── */
+    .res-panel {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: #1C1C1E;
+    }
+
+    .res-header {
+      padding: 12px 20px;
+      border-bottom: 1px solid #333;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-shrink: 0;
+    }
+    .res-title {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      color: #888;
+    }
+    .status-pill {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: #2C2C2E;
+      color: #888;
+      font-family: "SF Mono", monospace;
+    }
+    .status-pill.ok     { background: rgba(52,199,89,.15);  color: #34C759; }
+    .status-pill.err    { background: rgba(255,59,48,.15);  color: #FF3B30; }
+    .status-pill.warn   { background: rgba(255,149,0,.15);  color: #FF9500; }
+    .timing-label { font-size: 12px; color: #666; }
+    .count-label  { font-size: 12px; color: #888; margin-left: auto; }
+
+    .res-tabs {
+      display: flex;
+      border-bottom: 1px solid #333;
+      flex-shrink: 0;
+    }
+    .res-tab {
+      font-size: 13px;
+      font-weight: 500;
+      padding: 9px 16px;
+      color: #666;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: color .12s;
+      user-select: none;
+    }
+    .res-tab:hover { color: #aaa; }
+    .res-tab.active { color: #E8E8E8; border-bottom-color: var(--blue); }
+
+    .res-body-wrap {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 20px;
+      position: relative;
+    }
+    .res-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      gap: 10px;
+      color: #555;
+    }
+    .res-placeholder .icon { font-size: 32px; }
+    .res-placeholder p { font-size: 14px; line-height: 1.5; text-align: center; }
+
+    pre.response-json {
+      font-family: "SF Mono", "Fira Code", monospace;
+      font-size: 13px;
+      line-height: 1.65;
+      color: #E8E8E8;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    /* JSON syntax colours */
+    .j-key  { color: #79C0FF; }
+    .j-str  { color: #99D682; }
+    .j-num  { color: #FC9B5B; }
+    .j-bool { color: #F97680; }
+    .j-null { color: #888; }
+
+    .copy-res-btn {
+      position: absolute;
+      top: 12px; right: 16px;
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid #444;
+      background: #2C2C2E;
+      color: #AAA;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background .12s;
+    }
+    .copy-res-btn:hover { background: #3A3A3C; color: #fff; }
+
+    /* Jobs list tab */
+    .jobs-list { display: none; flex-direction: column; gap: 8px; }
+    .jobs-list.visible { display: flex; }
+    .mini-card {
+      background: #2C2C2E;
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+    }
+    .mc-title  { font-size: 14px; font-weight: 600; color: #E8E8E8; margin-bottom: 3px; }
+    .mc-sub    { font-size: 12px; color: #888; }
+    .mc-link   { font-size: 12px; color: var(--blue); text-decoration: none; }
+    .mc-link:hover { text-decoration: underline; }
+    .mc-meta   { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+    .mc-tag    { font-size: 11px; background: #3A3A3C; color: #AAA; padding: 2px 8px; border-radius: 10px; }
+    .mc-tag.remote { color: #34C759; background: rgba(52,199,89,.15); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(128,128,128,.35); border-radius: 3px; }
+
+    @media (max-width: 800px) {
+      .pg-layout { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; overflow: auto; }
+      body { overflow: auto; height: auto; }
+      .res-panel { min-height: 400px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="/">Job <span>API</span></a>
+  <div class="nav-links">
+    <a href="/" class="nav-link">Search</a>
+    <a href="/docs.html" class="nav-link">Docs</a>
+    <a href="/playground.html" class="nav-link active">Playground</a>
+  </div>
+</nav>
+
+<div class="pg-layout">
+
+  <!-- ── REQUEST PANEL ── -->
+  <div class="req-panel">
+    <div class="panel-header">
+      <span class="panel-title">Request</span>
+    </div>
+
+    <!-- URL bar -->
+    <div class="url-bar">
+      <select class="method-select" id="methodSelect" onchange="onMethodChange()">
+        <option value="GET">GET</option>
+        <option value="POST">POST</option>
+      </select>
+      <input class="url-input" id="urlInput" value="/api/jobs" readonly />
+      <button class="btn-send" id="sendBtn" onclick="sendRequest()">
+        <span class="send-icon">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1 6.5h11M7 1.5l5 5-5 5" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <div class="send-spinner"></div>
+        Send
+      </button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tab-bar">
+      <div class="tab-item active" onclick="switchReqTab(this,'params')">Params</div>
+      <div class="tab-item" onclick="switchReqTab(this,'body')">Body (JSON)</div>
+    </div>
+
+    <!-- Params tab -->
+    <div class="tab-content" id="req-tab-params">
+
+      <div class="form-section-label">Job Boards</div>
+      <div class="sites-grid" id="sitesGrid">
+        <label class="site-chip active"><input type="checkbox" value="indeed" checked><span class="dot"></span>Indeed</label>
+        <label class="site-chip active"><input type="checkbox" value="linkedin" checked><span class="dot"></span>LinkedIn</label>
+        <label class="site-chip"><input type="checkbox" value="glassdoor"><span class="dot"></span>Glassdoor</label>
+        <label class="site-chip"><input type="checkbox" value="zip_recruiter"><span class="dot"></span>ZipRecruiter</label>
+        <label class="site-chip"><input type="checkbox" value="google"><span class="dot"></span>Google</label>
+        <label class="site-chip"><input type="checkbox" value="bayt"><span class="dot"></span>Bayt</label>
+        <label class="site-chip"><input type="checkbox" value="naukri"><span class="dot"></span>Naukri</label>
+        <label class="site-chip"><input type="checkbox" value="bdjobs"><span class="dot"></span>BDJobs</label>
+      </div>
+
+      <div class="form-section-label">Search</div>
+      <div class="field">
+        <label>search_term</label>
+        <input id="p_search_term" type="text" placeholder="e.g. software engineer" />
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>location</label>
+          <input id="p_location" type="text" placeholder="New York, NY" />
+        </div>
+        <div class="field">
+          <label>country_indeed</label>
+          <select id="p_country_indeed">
+            <option value="">Any</option>
+            <option value="USA" selected>USA</option>
+            <option value="UK">UK</option>
+            <option value="Canada">Canada</option>
+            <option value="Australia">Australia</option>
+            <option value="Germany">Germany</option>
+            <option value="France">France</option>
+            <option value="India">India</option>
+            <option value="Singapore">Singapore</option>
+            <option value="UAE">UAE</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-section-label">Filters</div>
+      <div class="field-row">
+        <div class="field">
+          <label>job_type</label>
+          <select id="p_job_type">
+            <option value="">Any</option>
+            <option value="fulltime">Full-time</option>
+            <option value="parttime">Part-time</option>
+            <option value="contract">Contract</option>
+            <option value="internship">Internship</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>is_remote</label>
+          <select id="p_is_remote">
+            <option value="">Any</option>
+            <option value="true">Remote only</option>
+            <option value="false">On-site only</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>results_wanted</label>
+          <input id="p_results_wanted" type="number" placeholder="15" min="1" max="100" value="15"/>
+        </div>
+        <div class="field">
+          <label>hours_old</label>
+          <input id="p_hours_old" type="number" placeholder="e.g. 72"/>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>distance (miles)</label>
+          <input id="p_distance" type="number" placeholder="50"/>
+        </div>
+        <div class="field">
+          <label>offset</label>
+          <input id="p_offset" type="number" placeholder="0"/>
+        </div>
+      </div>
+
+      <div class="form-section-label">Advanced</div>
+      <div class="field-row">
+        <div class="field">
+          <label>description_format</label>
+          <select id="p_description_format">
+            <option value="markdown" selected>markdown</option>
+            <option value="html">html</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>easy_apply</label>
+          <select id="p_easy_apply">
+            <option value="">Any</option>
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>linkedin_company_ids (comma-separated)</label>
+        <input id="p_linkedin_company_ids" type="text" placeholder="1441,2382"/>
+      </div>
+      <div class="field">
+        <label>google_search_term</label>
+        <input id="p_google_search_term" type="text" placeholder="software engineer jobs near New York since yesterday"/>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>linkedin_fetch_description</label>
+          <select id="p_linkedin_fetch_description">
+            <option value="false" selected>false (fast)</option>
+            <option value="true">true (slow)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>enforce_annual_salary</label>
+          <select id="p_enforce_annual_salary">
+            <option value="false" selected>false</option>
+            <option value="true">true</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Body (JSON) tab -->
+    <div class="json-editor-wrap" id="req-tab-body">
+      <div class="json-toolbar">
+        <button class="json-tool-btn" onclick="fillTemplate()">Fill Template</button>
+        <button class="json-tool-btn" onclick="prettify()">Prettify</button>
+        <button class="json-tool-btn" onclick="clearBody()">Clear</button>
+      </div>
+      <textarea class="json-editor" id="jsonBody" placeholder='{
+  "search_term": "software engineer",
+  "location": "New York, NY",
+  "site_name": ["indeed", "linkedin"],
+  "results_wanted": 15,
+  "hours_old": 72
+}'></textarea>
+    </div>
+  </div>
+
+  <!-- ── RESPONSE PANEL ── -->
+  <div class="res-panel">
+    <div class="res-header">
+      <span class="res-title">Response</span>
+      <span class="status-pill" id="statusPill">—</span>
+      <span class="timing-label" id="timingLabel"></span>
+      <span class="count-label" id="countLabel"></span>
+    </div>
+
+    <div class="res-tabs">
+      <div class="res-tab active" onclick="switchResTab(this,'json')">JSON</div>
+      <div class="res-tab" onclick="switchResTab(this,'jobs')">Jobs</div>
+    </div>
+
+    <div class="res-body-wrap" id="res-json-view">
+      <div class="res-placeholder" id="resPlaceholder">
+        <div class="icon">🚀</div>
+        <p>Configure your request and hit <strong style="color:#E8E8E8">Send</strong><br>to see the response here.</p>
+      </div>
+      <button class="copy-res-btn" id="copyResBtn" style="display:none" onclick="copyResponse()">Copy</button>
+      <pre class="response-json" id="responseJson"></pre>
+    </div>
+
+    <div class="res-body-wrap" id="res-jobs-view" style="display:none">
+      <div class="jobs-list" id="jobsList"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let lastResponse = null;
+  let activeResTab = 'json';
+
+  // ── Site chips ──
+  document.querySelectorAll('.site-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const cb = chip.querySelector('input');
+      cb.checked = !cb.checked;
+      chip.classList.toggle('active', cb.checked);
+    });
+  });
+
+  function onMethodChange() {
+    const method = document.getElementById('methodSelect').value;
+    const paramsTab = document.querySelector('.tab-item[onclick*="params"]');
+    if (method === 'POST') {
+      // Switch to body tab
+      switchReqTab(document.querySelector('.tab-item[onclick*="body"]'), 'body');
+    }
+  }
+
+  function switchReqTab(btn, tab) {
+    document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('req-tab-params').style.display = 'none';
+    document.getElementById('req-tab-params').classList.add('hidden');
+    document.getElementById('req-tab-body').classList.remove('visible');
+    if (tab === 'params') {
+      document.getElementById('req-tab-params').style.display = 'flex';
+      document.getElementById('req-tab-params').classList.remove('hidden');
+    } else {
+      document.getElementById('req-tab-body').classList.add('visible');
+    }
+  }
+
+  function switchResTab(btn, tab) {
+    document.querySelectorAll('.res-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    activeResTab = tab;
+    if (tab === 'json') {
+      document.getElementById('res-json-view').style.display = 'block';
+      document.getElementById('res-jobs-view').style.display = 'none';
+    } else {
+      document.getElementById('res-json-view').style.display = 'none';
+      document.getElementById('res-jobs-view').style.display = 'block';
+      renderJobsTab();
+    }
+  }
+
+  function buildParams() {
+    const get = id => document.getElementById(id)?.value?.trim() || '';
+    const sites = [...document.querySelectorAll('.site-chip input:checked')].map(c => c.value);
+    const params = new URLSearchParams();
+    if (sites.length) params.set('site_name', sites.join(','));
+    if (get('p_search_term'))             params.set('search_term',   get('p_search_term'));
+    if (get('p_location'))                params.set('location',      get('p_location'));
+    if (get('p_country_indeed'))          params.set('country_indeed',get('p_country_indeed'));
+    if (get('p_job_type'))                params.set('job_type',      get('p_job_type'));
+    if (get('p_is_remote'))               params.set('is_remote',     get('p_is_remote'));
+    if (get('p_results_wanted'))          params.set('results_wanted',get('p_results_wanted'));
+    if (get('p_hours_old'))               params.set('hours_old',     get('p_hours_old'));
+    if (get('p_distance'))                params.set('distance',      get('p_distance'));
+    if (get('p_offset'))                  params.set('offset',        get('p_offset'));
+    if (get('p_description_format'))      params.set('description_format', get('p_description_format'));
+    if (get('p_easy_apply'))              params.set('easy_apply',    get('p_easy_apply'));
+    if (get('p_linkedin_company_ids'))    params.set('linkedin_company_ids', get('p_linkedin_company_ids'));
+    if (get('p_google_search_term'))      params.set('google_search_term',   get('p_google_search_term'));
+    if (get('p_linkedin_fetch_description') === 'true') params.set('linkedin_fetch_description', 'true');
+    if (get('p_enforce_annual_salary') === 'true')      params.set('enforce_annual_salary', 'true');
+    return params;
+  }
+
+  async function sendRequest() {
+    const method  = document.getElementById('methodSelect').value;
+    const btn     = document.getElementById('sendBtn');
+    const isBody  = document.getElementById('req-tab-body').classList.contains('visible');
+
+    btn.disabled = true;
+    btn.classList.add('loading');
+
+    const statusPill  = document.getElementById('statusPill');
+    const timingLabel = document.getElementById('timingLabel');
+    const countLabel  = document.getElementById('countLabel');
+    statusPill.className = 'status-pill';
+    statusPill.textContent = '…';
+    timingLabel.textContent = '';
+    countLabel.textContent = '';
+    document.getElementById('resPlaceholder').style.display = 'none';
+    document.getElementById('responseJson').textContent = '';
+    document.getElementById('copyResBtn').style.display = 'none';
+
+    const t0 = performance.now();
+
+    try {
+      let res, url = '/api/jobs';
+      if (method === 'GET' || !isBody) {
+        const params = buildParams();
+        res = await fetch(`${url}?${params}`, { method: 'GET' });
+      } else {
+        let body = document.getElementById('jsonBody').value.trim();
+        if (!body) body = '{}';
+        let parsed;
+        try { parsed = JSON.parse(body); } catch(e) {
+          showError(`Invalid JSON: ${e.message}`); btn.disabled = false; btn.classList.remove('loading'); return;
+        }
+        res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(parsed),
+        });
+      }
+
+      const ms   = Math.round(performance.now() - t0);
+      const data = await res.json();
+      lastResponse = data;
+
+      // Status pill
+      statusPill.textContent = `${res.status} ${res.statusText || (res.ok ? 'OK' : 'Error')}`;
+      statusPill.className   = 'status-pill ' + (res.ok ? 'ok' : res.status < 500 ? 'warn' : 'err');
+      timingLabel.textContent = `${ms} ms`;
+      if (data.count != null) countLabel.textContent = `${data.count} job${data.count !== 1 ? 's' : ''}`;
+
+      // Pretty JSON
+      document.getElementById('responseJson').innerHTML = syntaxHighlight(JSON.stringify(data, null, 2));
+      document.getElementById('copyResBtn').style.display = 'block';
+
+      // If jobs tab is active, render
+      if (activeResTab === 'jobs') renderJobsTab();
+
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      btn.disabled = false;
+      btn.classList.remove('loading');
+    }
+  }
+
+  function showError(msg) {
+    const statusPill = document.getElementById('statusPill');
+    statusPill.textContent = 'Error';
+    statusPill.className = 'status-pill err';
+    document.getElementById('responseJson').innerHTML = `<span style="color:#FF3B30">${esc(msg)}</span>`;
+    document.getElementById('copyResBtn').style.display = 'block';
+  }
+
+  function renderJobsTab() {
+    const list = document.getElementById('jobsList');
+    if (!lastResponse || !lastResponse.jobs) {
+      list.innerHTML = '<p style="color:#666;text-align:center;padding:32px">No job data yet — run a search first.</p>';
+      list.classList.add('visible');
+      return;
+    }
+    const jobs = lastResponse.jobs;
+    if (!jobs.length) {
+      list.innerHTML = '<p style="color:#666;text-align:center;padding:32px">No jobs found for that query.</p>';
+      list.classList.add('visible');
+      return;
+    }
+    list.innerHTML = jobs.map(j => {
+      const loc = j.location ? [j.location.city, j.location.state, j.location.country].filter(Boolean).join(', ') : '';
+      const tags = [j.site, j.job_type, j.is_remote ? 'remote' : null, loc].filter(Boolean);
+      return `<div class="mini-card">
+        <div class="mc-title">${esc(j.title || 'Untitled')}</div>
+        <div class="mc-sub">${esc(j.company || '')}${j.date_posted ? ' · ' + j.date_posted : ''}</div>
+        <div class="mc-meta">
+          ${tags.map(t => `<span class="mc-tag${t==='remote'?' remote':''}">${esc(t)}</span>`).join('')}
+        </div>
+        ${j.job_url ? `<a class="mc-link" href="${esc(j.job_url)}" target="_blank" rel="noopener">Apply →</a>` : ''}
+      </div>`;
+    }).join('');
+    list.classList.add('visible');
+  }
+
+  function syntaxHighlight(json) {
+    return json
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, match => {
+        let cls = 'j-num';
+        if (/^"/.test(match)) {
+          cls = /:$/.test(match) ? 'j-key' : 'j-str';
+        } else if (/true|false/.test(match)) {
+          cls = 'j-bool';
+        } else if (/null/.test(match)) {
+          cls = 'j-null';
+        }
+        return `<span class="${cls}">${match}</span>`;
+      });
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function copyResponse() {
+    const text = document.getElementById('responseJson').innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.getElementById('copyResBtn');
+      btn.textContent = 'Copied!';
+      setTimeout(() => btn.textContent = 'Copy', 1500);
+    });
+  }
+
+  function fillTemplate() {
+    document.getElementById('jsonBody').value = JSON.stringify({
+      site_name: ["indeed", "linkedin"],
+      search_term: "software engineer",
+      location: "New York, NY",
+      country_indeed: "USA",
+      results_wanted: 15,
+      hours_old: 72,
+      job_type: "fulltime",
+      is_remote: false,
+      description_format: "markdown"
+    }, null, 2);
+  }
+
+  function prettify() {
+    const ta = document.getElementById('jsonBody');
+    try {
+      ta.value = JSON.stringify(JSON.parse(ta.value), null, 2);
+    } catch(e) {
+      alert('Invalid JSON: ' + e.message);
+    }
+  }
+
+  function clearBody() {
+    document.getElementById('jsonBody').value = '';
+  }
+
+  // Send on Ctrl+Enter
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') sendRequest();
+  });
+</script>
+</body>
+</html>

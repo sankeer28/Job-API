@@ -1,162 +1,76 @@
 """
-JobSpy API — Vercel Serverless
+Job API — FastAPI + python-jobspy
 
-Wraps python-jobspy's scrape_jobs() as a JSON REST endpoint.
-
-Local dev:  python api/index.py       → http://localhost:8000
+Local dev:  uvicorn api.index:app --reload --port 8000
 Vercel:     vercel.json routes everything here automatically.
-
-Endpoints
----------
-GET  /              → API reference (parameter docs)
-GET  /api/jobs      → scrape jobs, all params as query-string
-POST /api/jobs      → scrape jobs, all params as JSON body
-                      (query-string and JSON body are merged; body wins on conflict)
 """
 
+import io
+import math
 import os
 import sys
-import math
+from typing import Any, List, Optional
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from flask import Flask, request, jsonify, send_file
-from flask_cors import CORS
-from flasgger import Swagger
 import pandas as pd
+from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from jobspy import scrape_jobs
+from pydantic import BaseModel, Field
 
-app = Flask(__name__)
-CORS(app)  # allow all origins — restrict to your domain in production if needed
+app = FastAPI(
+    title="Job API",
+    description="Aggregate job postings from LinkedIn, Indeed, Glassdoor, ZipRecruiter, Google Jobs, Bayt, Naukri and more via python-jobspy.",
+    version="2.0.0",
+)
 
-# ── Swagger / OpenAPI config ───────────────────────────────────────────────────
-SWAGGER_TEMPLATE = {
-    "swagger": "2.0",
-    "info": {
-        "title": "JobSpy API",
-        "description": (
-            "Aggregate job postings from LinkedIn, Indeed, Glassdoor, "
-            "ZipRecruiter, Google Jobs, Bayt, Naukri, and more via python-jobspy.\n\n"
-            "**Quick start:** fill in `search_term` + `location`, leave everything "
-            "else at its default, and hit **Execute**."
-        ),
-        "version": "1.0.0",
-    },
-    "basePath": "/",
-    "schemes": ["http", "https"],
-    "consumes": ["application/json"],
-    "produces": ["application/json"],
-    "tags": [
-        {"name": "Jobs",      "description": "Job-scraping endpoints"},
-        {"name": "Reference", "description": "API documentation"},
-    ],
-    "definitions": {
-        "Salary": {
-            "type": "object",
-            "properties": {
-                "interval":      {"type": "string", "example": "yearly"},
-                "min_amount":    {"type": "number", "example": 80000},
-                "max_amount":    {"type": "number", "example": 120000},
-                "currency":      {"type": "string", "example": "USD"},
-                "salary_source": {"type": "string", "example": "direct_data"},
-            },
-        },
-        "Location": {
-            "type": "object",
-            "properties": {
-                "country": {"type": "string"},
-                "city":    {"type": "string"},
-                "state":   {"type": "string"},
-            },
-        },
-        "JobPost": {
-            "type": "object",
-            "properties": {
-                "site":             {"type": "string", "example": "indeed"},
-                "title":            {"type": "string", "example": "Software Engineer"},
-                "company":          {"type": "string", "example": "Acme Corp"},
-                "company_url":      {"type": "string"},
-                "job_url":          {"type": "string"},
-                "location":         {"$ref": "#/definitions/Location"},
-                "is_remote":        {"type": "boolean"},
-                "description":      {"type": "string"},
-                "job_type":         {"type": "string", "example": "fulltime"},
-                "salary":           {"$ref": "#/definitions/Salary"},
-                "date_posted":      {"type": "string", "format": "date", "example": "2025-01-15"},
-                "emails":           {"type": "array", "items": {"type": "string"}},
-                "job_level":        {"type": "string"},
-                "company_industry": {"type": "string"},
-            },
-        },
-        "JobsResponse": {
-            "type": "object",
-            "properties": {
-                "jobs":  {"type": "array", "items": {"$ref": "#/definitions/JobPost"}},
-                "count": {"type": "integer", "example": 15},
-                "sites": {"type": "array", "items": {"type": "string"}, "example": ["indeed"]},
-                "query": {"type": "object"},
-            },
-        },
-        "ErrorResponse": {
-            "type": "object",
-            "properties": {
-                "error":      {"type": "string"},
-                "error_type": {"type": "string"},
-                "parameters": {"type": "object"},
-            },
-        },
-        "JobsBody": {
-            "type": "object",
-            "properties": {
-                "site_name":                  {"type": "array", "items": {"type": "string"}, "example": ["indeed"],
-                                              "description": "Job boards to scrape. Options: linkedin, indeed, zip_recruiter, glassdoor, google, bayt, bdjobs, naukri"},
-                "search_term":                {"type": "string",  "example": "software engineer"},
-                "google_search_term":         {"type": "string",  "example": "software engineer jobs near New York since yesterday",
-                                              "description": "Used only for Google Jobs — copy directly from a google.com/search jobs query"},
-                "location":                   {"type": "string",  "example": "New York, NY"},
-                "distance":                   {"type": "integer", "example": 50, "default": 50},
-                "job_type":                   {"type": "string",  "example": "fulltime",
-                                              "description": "fulltime | parttime | internship | contract"},
-                "is_remote":                  {"type": "boolean", "example": False},
-                "results_wanted":             {"type": "integer", "example": 15, "default": 15,
-                                              "description": "Number of results per site (max ~1000)"},
-                "hours_old":                  {"type": "integer", "example": 72,
-                                              "description": "Only return jobs posted within the last N hours"},
-                "easy_apply":                 {"type": "boolean", "example": False},
-                "description_format":         {"type": "string",  "example": "markdown",
-                                              "description": "markdown | html"},
-                "offset":                     {"type": "integer", "example": 0, "default": 0},
-                "linkedin_fetch_description": {"type": "boolean", "example": False,
-                                              "description": "Fetch full LinkedIn description (much slower)"},
-                "linkedin_company_ids":       {"type": "array", "items": {"type": "integer"},
-                                              "example": [1441]},
-                "country_indeed":             {"type": "string",  "example": "USA",
-                                              "description": "Country filter for Indeed / Glassdoor (e.g. USA, UK, Canada, Germany)"},
-                "enforce_annual_salary":      {"type": "boolean", "example": False},
-                "proxies":                    {"type": "array", "items": {"type": "string"},
-                                              "example": ["user:pass@1.2.3.4:8080"]},
-                "user_agent":                 {"type": "string"},
-                "ca_cert":                    {"type": "string"},
-            },
-        },
-    },
-}
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-swagger = Swagger(app, template=SWAGGER_TEMPLATE, config={
-    "headers": [],
-    "specs": [{"endpoint": "apispec", "route": "/apispec.json"}],
-    "static_url_path": "/flasgger_static",
-    "swagger_ui": True,
-    "specs_route": "/docs",
-})
+# ── Constants ─────────────────────────────────────────────────────────────────
+
+VALID_SITES    = {"linkedin", "indeed", "zip_recruiter", "glassdoor", "google", "bayt", "bdjobs", "naukri"}
+VALID_TYPES    = {None, "fulltime", "parttime", "internship", "contract"}
+VALID_FORMATS  = {"markdown", "html"}
+PUBLIC_DIR     = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "public")
+
+
+# ── Pydantic request model (POST body) ────────────────────────────────────────
+
+class JobSearchRequest(BaseModel):
+    site_name:                  Optional[List[str]] = Field(None, example=["indeed", "linkedin"])
+    search_term:                Optional[str]       = Field(None, example="software engineer")
+    google_search_term:         Optional[str]       = None
+    location:                   Optional[str]       = Field(None, example="New York, NY")
+    distance:                   Optional[int]       = Field(50,   example=50)
+    job_type:                   Optional[str]       = Field(None, example="fulltime")
+    is_remote:                  Optional[bool]      = None
+    results_wanted:             Optional[int]       = Field(15,   example=15)
+    hours_old:                  Optional[int]       = None
+    easy_apply:                 Optional[bool]      = None
+    description_format:         Optional[str]       = Field("markdown", example="markdown")
+    offset:                     Optional[int]       = Field(0,    example=0)
+    linkedin_fetch_description: Optional[bool]      = False
+    linkedin_company_ids:       Optional[List[int]] = None
+    country_indeed:             Optional[str]       = Field(None, example="USA")
+    enforce_annual_salary:      Optional[bool]      = False
+    proxies:                    Optional[List[str]] = None
+    user_agent:                 Optional[str]       = None
+    output_format:              Optional[str]       = Field("json", example="json")
+
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 TRUTHY = {"1", "true", "yes"}
 
 
-def _bool(val) -> bool | None:
-    """Parse a bool from a string or native bool/int. Returns None if val is None."""
+def _bool(val) -> Optional[bool]:
     if val is None:
         return None
     if isinstance(val, bool):
@@ -166,7 +80,7 @@ def _bool(val) -> bool | None:
     return str(val).lower() in TRUTHY
 
 
-def _int(val, default=None) -> int | None:
+def _int(val, default=None) -> Optional[int]:
     if val is None or val == "":
         return default
     try:
@@ -175,8 +89,7 @@ def _int(val, default=None) -> int | None:
         return default
 
 
-def _csv_list(val, cast=str) -> list | None:
-    """Split a comma-separated string (or pass-through a list) and cast each element."""
+def _csv_list(val, cast=str) -> Optional[list]:
     if val is None or val == "":
         return None
     if isinstance(val, list):
@@ -199,15 +112,7 @@ def _csv_list(val, cast=str) -> list | None:
     return result or None
 
 
-def df_to_safe_records(df: pd.DataFrame) -> list[dict]:
-    """
-    Convert a pandas DataFrame to a list of plain dicts that are safe to
-    JSON-serialise:
-      - float NaN / inf  → None
-      - NaT / pd.NA      → None
-      - date / datetime  → ISO-8601 string
-      - everything else  → kept as-is
-    """
+def df_to_safe_records(df: pd.DataFrame) -> List[dict]:
     records = []
     for _, row in df.iterrows():
         clean: dict = {}
@@ -217,12 +122,11 @@ def df_to_safe_records(df: pd.DataFrame) -> list[dict]:
                     clean[key] = None
                 elif isinstance(val, float) and (math.isnan(val) or math.isinf(val)):
                     clean[key] = None
-                elif hasattr(val, "isoformat"):          # date / datetime
+                elif hasattr(val, "isoformat"):
                     clean[key] = val.isoformat()
                 elif isinstance(val, (list, dict, bool)):
                     clean[key] = val
                 else:
-                    # Check pandas-specific NA types (NAType, NaT, etc.)
                     try:
                         if pd.isna(val):
                             clean[key] = None
@@ -236,286 +140,171 @@ def df_to_safe_records(df: pd.DataFrame) -> list[dict]:
     return records
 
 
-# ── Routes ────────────────────────────────────────────────────────────────────
+def _build_kwargs(params: dict) -> dict:
+    """Turn a flat params dict into scrape_jobs() kwargs."""
+    site_name = _csv_list(params.get("site_name")) or \
+                ["linkedin", "indeed", "zip_recruiter", "glassdoor", "google", "bayt", "bdjobs", "naukri"]
 
-@app.route("/", methods=["GET"])
-def index():
-    """
-    API reference
-    ---
-    tags:
-      - Reference
-    summary: Full parameter reference and response schema
-    responses:
-      200:
-        description: API documentation object
-    """
-    html = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "public", "index.html")
-    if os.path.exists(html):
-        return send_file(html)
-    return jsonify({"name": "Job API", "status": "ok"})
+    invalid_sites = [s for s in site_name if s not in VALID_SITES]
+    if invalid_sites:
+        raise HTTPException(400, f"Unknown site(s): {invalid_sites}. Valid: {sorted(VALID_SITES)}")
 
+    job_type          = params.get("job_type") or None
+    description_format = params.get("description_format") or "markdown"
 
-@app.route("/api/jobs", methods=["GET"])
-def jobs_get():
-    """
-    Scrape jobs (GET)
-    ---
-    tags:
-      - Jobs
-    summary: Scrape job postings — pass all parameters as query-string
-    parameters:
-      - name: site_name
-        in: query
-        type: string
-        description: "Comma-separated list of job boards. Options: linkedin, indeed, zip_recruiter, glassdoor, google, bayt, bdjobs, naukri"
-        example: indeed
-      - name: search_term
-        in: query
-        type: string
-        description: Job search query (supports -negative and \"exact phrase\")
-        example: software engineer
-      - name: google_search_term
-        in: query
-        type: string
-        description: "Used only for Google Jobs — copy directly from a google.com/search jobs query"
-        example: "software engineer jobs near New York since yesterday"
-      - name: location
-        in: query
-        type: string
-        description: City, state, or country
-        example: "New York, NY"
-      - name: distance
-        in: query
-        type: integer
-        description: Search radius in miles
-        default: 50
-      - name: job_type
-        in: query
-        type: string
-        description: "fulltime | parttime | internship | contract"
-        example: fulltime
-      - name: is_remote
-        in: query
-        type: boolean
-        description: Filter for remote listings only
-      - name: results_wanted
-        in: query
-        type: integer
-        description: Number of results per site (max ~1000)
-        default: 15
-      - name: hours_old
-        in: query
-        type: integer
-        description: Only return jobs posted within the last N hours
-        example: 72
-      - name: easy_apply
-        in: query
-        type: boolean
-        description: Only return jobs with in-board application
-      - name: description_format
-        in: query
-        type: string
-        description: "markdown | html"
-        default: markdown
-      - name: offset
-        in: query
-        type: integer
-        description: Skip first N results (pagination)
-        default: 0
-      - name: linkedin_fetch_description
-        in: query
-        type: boolean
-        description: Fetch full LinkedIn description — much slower
-        default: false
-      - name: linkedin_company_ids
-        in: query
-        type: string
-        description: Comma-separated LinkedIn company IDs
-        example: "1441,2382"
-      - name: country_indeed
-        in: query
-        type: string
-        description: Country filter for Indeed / Glassdoor (e.g. USA, UK, Canada, Germany)
-        example: USA
-      - name: enforce_annual_salary
-        in: query
-        type: boolean
-        description: Convert all salary figures to annual amount
-        default: false
-      - name: proxies
-        in: query
-        type: string
-        description: Comma-separated proxy list (user:pass@host:port)
-      - name: user_agent
-        in: query
-        type: string
-        description: Override the default User-Agent header
-      - name: ca_cert
-        in: query
-        type: string
-        description: Path to CA certificate bundle for HTTPS proxies
-    responses:
-      200:
-        description: List of job postings
-        schema:
-          $ref: '#/definitions/JobsResponse'
-      400:
-        description: Invalid parameter value
-        schema:
-          $ref: '#/definitions/ErrorResponse'
-      500:
-        description: Scraping error
-        schema:
-          $ref: '#/definitions/ErrorResponse'
-    """
-    return _jobs_handler()
+    if job_type and job_type not in VALID_TYPES:
+        raise HTTPException(400, f"Invalid job_type '{job_type}'. Valid: fulltime, parttime, internship, contract")
+    if description_format not in VALID_FORMATS:
+        raise HTTPException(400, f"Invalid description_format '{description_format}'. Valid: markdown, html")
 
+    is_remote  = params.get("is_remote")
+    easy_apply = params.get("easy_apply")
 
-@app.route("/api/jobs", methods=["POST"])
-def jobs_post():
-    """
-    Scrape jobs (POST)
-    ---
-    tags:
-      - Jobs
-    summary: Scrape job postings — pass parameters as a JSON body
-    description: Query-string and JSON body are merged; body takes precedence on conflict.
-    parameters:
-      - name: body
-        in: body
-        required: false
-        schema:
-          $ref: '#/definitions/JobsBody'
-    responses:
-      200:
-        description: List of job postings
-        schema:
-          $ref: '#/definitions/JobsResponse'
-      400:
-        description: Invalid parameter value
-        schema:
-          $ref: '#/definitions/ErrorResponse'
-      500:
-        description: Scraping error
-        schema:
-          $ref: '#/definitions/ErrorResponse'
-    """
-    return _jobs_handler()
-
-
-def _jobs_handler():
-    # ── Merge query-string + JSON body ────────────────────────────────────────
-    params: dict = {}
-    params.update(request.args.to_dict(flat=True))
-    if request.is_json:
-        body = request.get_json(silent=True)
-        if body and isinstance(body, dict):
-            params.update(body)
-
-    # ── Parse every supported parameter ──────────────────────────────────────
-
-    # site_name — default to all supported sites
-    site_name = _csv_list(params.get("site_name"))
-    if not site_name:
-        site_name = ["linkedin", "indeed", "zip_recruiter", "glassdoor", "google", "bayt", "bdjobs", "naukri"]
-
-    search_term             = params.get("search_term") or None
-    google_search_term      = params.get("google_search_term") or None
-    location                = params.get("location") or None
-    distance                = _int(params.get("distance"), default=50)
-    job_type                = params.get("job_type") or None
-    is_remote               = _bool(params.get("is_remote")) if params.get("is_remote") is not None else None
-    results_wanted          = _int(params.get("results_wanted"), default=15)
-    hours_old               = _int(params.get("hours_old"))
-    easy_apply              = _bool(params.get("easy_apply")) if params.get("easy_apply") is not None else None
-    description_format      = params.get("description_format") or "markdown"
-    offset                  = _int(params.get("offset"), default=0)
-
-    linkedin_fetch_description = _bool(params.get("linkedin_fetch_description")) or False
-    linkedin_company_ids       = _csv_list(params.get("linkedin_company_ids"), cast=int)
-
-    country_indeed          = params.get("country_indeed") or None
-    enforce_annual_salary   = _bool(params.get("enforce_annual_salary")) or False
-
-    proxies                 = _csv_list(params.get("proxies"))
-    user_agent              = params.get("user_agent") or None
-    ca_cert                 = params.get("ca_cert") or None
-
-    # ── Validate ──────────────────────────────────────────────────────────────
-    valid_sites = {"linkedin", "indeed", "zip_recruiter", "glassdoor", "google", "bayt", "bdjobs", "naukri"}
-    invalid = [s for s in site_name if s not in valid_sites]
-    if invalid:
-        return jsonify({
-            "error": f"Unknown site(s): {invalid}. Valid options: {sorted(valid_sites)}"
-        }), 400
-
-    valid_job_types = {None, "fulltime", "parttime", "internship", "contract"}
-    if job_type not in valid_job_types:
-        return jsonify({
-            "error": f"Invalid job_type '{job_type}'. Valid options: fulltime, parttime, internship, contract"
-        }), 400
-
-    valid_formats = {None, "markdown", "html"}
-    if description_format not in valid_formats:
-        return jsonify({
-            "error": f"Invalid description_format '{description_format}'. Valid options: markdown, html"
-        }), 400
-
-    # ── Build kwargs — only forward non-None optional args ────────────────────
     kwargs: dict = {
-        "site_name":                   site_name,
-        "results_wanted":              results_wanted,
-        "distance":                    distance,
-        "description_format":          description_format,
-        "offset":                      offset,
-        "linkedin_fetch_description":  linkedin_fetch_description,
-        "enforce_annual_salary":       enforce_annual_salary,
-        "verbose":                     0,   # suppress console output in API mode
+        "site_name":                  site_name,
+        "results_wanted":             _int(params.get("results_wanted"), 15),
+        "distance":                   _int(params.get("distance"), 50),
+        "description_format":         description_format,
+        "offset":                     _int(params.get("offset"), 0),
+        "linkedin_fetch_description": _bool(params.get("linkedin_fetch_description")) or False,
+        "enforce_annual_salary":      _bool(params.get("enforce_annual_salary")) or False,
+        "verbose":                    0,
     }
 
-    if search_term:             kwargs["search_term"]           = search_term
-    if google_search_term:      kwargs["google_search_term"]    = google_search_term
-    if location:                kwargs["location"]              = location
-    if job_type:                kwargs["job_type"]              = job_type
-    if is_remote is not None:   kwargs["is_remote"]             = is_remote
-    if hours_old is not None:   kwargs["hours_old"]             = hours_old
-    if easy_apply is not None:  kwargs["easy_apply"]            = easy_apply
-    if linkedin_company_ids:    kwargs["linkedin_company_ids"]  = linkedin_company_ids
-    if country_indeed:          kwargs["country_indeed"]        = country_indeed
-    if proxies:                 kwargs["proxies"]               = proxies
-    if user_agent:              kwargs["user_agent"]            = user_agent
-    if ca_cert:                 kwargs["ca_cert"]               = ca_cert
+    if params.get("search_term"):          kwargs["search_term"]          = params["search_term"]
+    if params.get("google_search_term"):   kwargs["google_search_term"]   = params["google_search_term"]
+    if params.get("location"):             kwargs["location"]             = params["location"]
+    if job_type:                           kwargs["job_type"]             = job_type
+    if is_remote is not None:              kwargs["is_remote"]            = _bool(is_remote)
+    if params.get("hours_old"):            kwargs["hours_old"]            = _int(params["hours_old"])
+    if easy_apply is not None:             kwargs["easy_apply"]           = _bool(easy_apply)
+    if params.get("country_indeed"):       kwargs["country_indeed"]       = params["country_indeed"]
+    if params.get("proxies"):              kwargs["proxies"]              = _csv_list(params["proxies"])
+    if params.get("user_agent"):           kwargs["user_agent"]           = params["user_agent"]
 
-    # ── Scrape ────────────────────────────────────────────────────────────────
+    lci = params.get("linkedin_company_ids")
+    if lci:
+        kwargs["linkedin_company_ids"] = _csv_list(lci, cast=int) if isinstance(lci, str) else lci
+
+    return kwargs, site_name
+
+
+def _csv_response(df: pd.DataFrame) -> StreamingResponse:
+    buf = io.StringIO()
+    df.to_csv(buf, index=False)
+    buf.seek(0)
+    return StreamingResponse(
+        iter([buf.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=jobs.csv"},
+    )
+
+
+def _excel_response(df: pd.DataFrame) -> StreamingResponse:
+    buf = io.BytesIO()
+    df.to_excel(buf, index=False)
+    buf.seek(0)
+    return StreamingResponse(
+        iter([buf.getvalue()]),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=jobs.xlsx"},
+    )
+
+
+async def _run_scrape(params: dict):
+    """Core scrape logic shared by GET and POST handlers."""
+    output_format = (params.get("output_format") or "json").lower()
+    kwargs, site_name = _build_kwargs(params)
+
     try:
         df = scrape_jobs(**kwargs)
     except Exception as exc:
-        return jsonify({
+        raise HTTPException(500, detail={
             "error":      str(exc),
             "error_type": type(exc).__name__,
             "parameters": {k: v for k, v in kwargs.items() if k != "verbose"},
-        }), 500
-
-    # ── Serialise ─────────────────────────────────────────────────────────────
-    if df is None or df.empty:
-        return jsonify({
-            "jobs":  [],
-            "count": 0,
-            "sites": site_name,
-            "query": {k: v for k, v in kwargs.items() if k != "verbose"},
         })
 
-    records = df_to_safe_records(df)
+    if output_format == "csv":
+        return _csv_response(df if df is not None else pd.DataFrame())
+    if output_format == "excel":
+        return _excel_response(df if df is not None else pd.DataFrame())
 
-    return jsonify({
-        "jobs":  records,
-        "count": len(records),
-        "sites": site_name,
-        "query": {k: v for k, v in kwargs.items() if k != "verbose"},
-    })
+    if df is None or df.empty:
+        return {"jobs": [], "count": 0, "sites": site_name,
+                "query": {k: v for k, v in kwargs.items() if k != "verbose"}}
+
+    records = df_to_safe_records(df)
+    return {"jobs": records, "count": len(records), "sites": site_name,
+            "query": {k: v for k, v in kwargs.items() if k != "verbose"}}
+
+
+# ── Routes ────────────────────────────────────────────────────────────────────
+
+@app.get("/", include_in_schema=False)
+async def index():
+    html = os.path.join(PUBLIC_DIR, "index.html")
+    if os.path.exists(html):
+        return FileResponse(html, media_type="text/html")
+    return JSONResponse({"name": "Job API", "version": "2.0.0", "status": "ok"})
+
+
+@app.get("/docs.html", include_in_schema=False)
+@app.get("/playground.html", include_in_schema=False)
+async def static_pages(request: Request):
+    filename = request.url.path.lstrip("/")
+    path = os.path.join(PUBLIC_DIR, filename)
+    if os.path.exists(path):
+        return FileResponse(path, media_type="text/html")
+    raise HTTPException(404, "Not found")
+
+
+@app.get("/api/health", tags=["Meta"])
+async def health():
+    """API health check."""
+    return {"status": "ok", "service": "Job API", "version": "2.0.0"}
+
+
+@app.get("/api/sites", tags=["Meta"])
+async def sites():
+    """List all supported job boards."""
+    return {"sites": sorted(VALID_SITES)}
+
+
+@app.get("/api/jobs", tags=["Jobs"], summary="Scrape jobs (GET — query params)")
+async def jobs_get(
+    site_name:                  Optional[str]  = Query(None,        description="Comma-separated boards: indeed,linkedin,glassdoor,zip_recruiter,google,bayt,naukri,bdjobs"),
+    search_term:                Optional[str]  = Query(None,        example="software engineer"),
+    google_search_term:         Optional[str]  = Query(None),
+    location:                   Optional[str]  = Query(None,        example="New York, NY"),
+    distance:                   Optional[int]  = Query(50),
+    job_type:                   Optional[str]  = Query(None,        description="fulltime|parttime|internship|contract"),
+    is_remote:                  Optional[str]  = Query(None),
+    results_wanted:             Optional[int]  = Query(15),
+    hours_old:                  Optional[int]  = Query(None),
+    easy_apply:                 Optional[str]  = Query(None),
+    description_format:         Optional[str]  = Query("markdown",  description="markdown|html"),
+    offset:                     Optional[int]  = Query(0),
+    linkedin_fetch_description: Optional[str]  = Query(None),
+    linkedin_company_ids:       Optional[str]  = Query(None,        description="Comma-separated IDs, e.g. 1441,2382"),
+    country_indeed:             Optional[str]  = Query(None,        example="USA"),
+    enforce_annual_salary:      Optional[str]  = Query(None),
+    proxies:                    Optional[str]  = Query(None),
+    user_agent:                 Optional[str]  = Query(None),
+    output_format:              Optional[str]  = Query("json",      description="json|csv|excel"),
+):
+    params = {k: v for k, v in locals().items() if v is not None}
+    return await _run_scrape(params)
+
+
+@app.post("/api/jobs", tags=["Jobs"], summary="Scrape jobs (POST — JSON body)")
+async def jobs_post(body: JobSearchRequest):
+    params = {k: v for k, v in body.model_dump(exclude_none=True).items()}
+    return await _run_scrape(params)
 
 
 # ── Dev server ────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    app.run(debug=True, port=8000)
+    import uvicorn
+    uvicorn.run("api.index:app", host="0.0.0.0", port=8000, reload=True)
+

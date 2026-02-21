@@ -1,4 +1,7 @@
 python-jobspy>=1.1.79
-flask>=3.0.0
-flasgger>=0.9.7
-flask-cors>=4.0.0
+fastapi
+uvicorn[standard]
+pandas
+openpyxl
+python-multipart
+pydantic
