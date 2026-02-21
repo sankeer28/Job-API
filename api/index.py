@@ -39,11 +39,9 @@ VALID_SITES   = {"linkedin", "indeed", "zip_recruiter", "glassdoor", "google", "
 VALID_TYPES   = {None, "fulltime", "parttime", "internship", "contract"}
 VALID_FORMATS = {"markdown", "html"}
 
-# Vercel CWD is always the project root; locally it's wherever you run uvicorn from.
-# Fall back to the directory two levels above api/index.py just in case.
-_cwd_public = os.path.join(os.getcwd(), "public")
-_rel_public = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "public")
-PUBLIC_DIR  = _cwd_public if os.path.isdir(_cwd_public) else _rel_public
+# HTML files live in api/public/ so they're always bundled with the function.
+_here      = os.path.dirname(os.path.abspath(__file__))
+PUBLIC_DIR = os.path.join(_here, "public")
 
 
 # ── Pydantic request model (POST body) ────────────────────────────────────────
