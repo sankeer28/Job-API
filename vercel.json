@@ -1,8 +1,8 @@
 {
-  "functions": {
-    "api/*.py": {
-      "includeFiles": "public/**"
-    }
-  },
-  "routes": [{ "src": "/(.*)", "dest": "/api/index.py" }]
+  "builds": [
+    { "src": "api/index.py", "use": "@vercel/python" }
+  ],
+  "routes": [
+    { "src": "/(.*)", "dest": "/api/index.py" }
+  ]
 }

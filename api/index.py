@@ -266,6 +266,29 @@ async def health():
     return {"status": "ok", "service": "Job API", "version": "2.0.0"}
 
 
+@app.get("/api/debug-files", include_in_schema=False)
+async def debug_files():
+    """Temporary: show what exists on the server."""
+    cwd = os.getcwd()
+    here = os.path.dirname(os.path.abspath(__file__))
+    result = {"cwd": cwd, "here": here, "PUBLIC_DIR": PUBLIC_DIR, "public_exists": os.path.isdir(PUBLIC_DIR)}
+    # List top-level items
+    try:
+        result["cwd_contents"] = os.listdir(cwd)
+    except Exception as e:
+        result["cwd_contents"] = str(e)
+    # List public/ if it exists
+    if os.path.isdir(PUBLIC_DIR):
+        result["public_contents"] = os.listdir(PUBLIC_DIR)
+    # Also check /var/task
+    for d in ["/var/task", "/var/task/public", "/var/task/api"]:
+        try:
+            result[d] = os.listdir(d)
+        except Exception as e:
+            result[d] = str(e)
+    return result
+
+
 @app.get("/api/sites", tags=["Meta"])
 async def sites():
     """List all supported job boards."""
