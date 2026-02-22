@@ -4,547 +4,387 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Playground — Job API</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --blue:        #007AFF;
-      --blue-dark:   #0062CC;
-      --bg:          #F5F5F7;
-      --surface:     #FFFFFF;
-      --border:      #D2D2D7;
-      --text:        #1D1D1F;
-      --subtext:     #6E6E73;
-      --tag-bg:      #F0F4FF;
-      --tag-text:    #0051D6;
-      --green:       #34C759;
-      --red:         #FF3B30;
-      --orange:      #FF9500;
-      --radius:      14px;
-      --radius-sm:   8px;
-      --shadow-card: 0 1px 6px rgba(0,0,0,.06), 0 4px 24px rgba(0,0,0,.06);
+      --blue:   #0071E3;
+      --blue-h: #0077ED;
+      --bg:     #F5F5F7;
+      --surface:#FFFFFF;
+      --border: rgba(0,0,0,.08);
+      --text:   #1D1D1F;
+      --sub:    #6E6E73;
+      --green:  #34C759;
+      --red:    #FF3B30;
+      --orange: #FF9500;
+      --r:      18px;
+      --rs:     10px;
+      --font:   'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      --mono:   'JetBrains Mono', monospace;
+      --dark-bg:     #0D0D0D;
+      --dark-surf:   #161616;
+      --dark-border: rgba(255,255,255,.07);
     }
-
-    /* ── Dark mode ── */
     html.dark {
-      --bg:          #1C1C1E;
-      --surface:     #2C2C2E;
-      --border:      #3A3A3C;
-      --text:        #F5F5F7;
-      --subtext:     #8E8E93;
-      --tag-bg:      rgba(0,122,255,.18);
-      --tag-text:    #64B0FF;
-      --shadow-card: 0 1px 6px rgba(0,0,0,.4), 0 4px 24px rgba(0,0,0,.4);
+      --bg:      #000;
+      --surface: #1C1C1E;
+      --border:  rgba(255,255,255,.08);
+      --text:    #F5F5F7;
+      --sub:     #98989D;
     }
-    html.dark nav {
-      background: rgba(28,28,30,.88);
-      border-bottom-color: rgba(255,255,255,.08);
+    html.dark nav { background: rgba(0,0,0,.78); border-bottom-color: rgba(255,255,255,.06); }
+    html.dark input, html.dark select, html.dark textarea {
+      background: rgba(255,255,255,.05); color: var(--text); border-color: var(--border);
     }
-    html.dark input, html.dark textarea, html.dark select {
-      background: #3A3A3C; color: var(--text); border-color: var(--border);
-    }
-    html.dark input::placeholder, html.dark textarea::placeholder { color: var(--subtext); }
-    .dark-toggle {
-      background: none;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 5px 10px;
-      cursor: pointer;
-      font-size: 15px;
-      line-height: 1;
-      color: var(--subtext);
-      transition: background .15s;
-      margin-left: 4px;
-    }
-    .dark-toggle:hover { background: var(--tag-bg); }
+    html.dark input::placeholder, html.dark textarea::placeholder { color: #555; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
+      font-family: var(--font);
+      background: var(--bg); color: var(--text);
+      height: 100vh; display: flex; flex-direction: column; overflow: hidden;
     }
 
     /* ── Nav ── */
     nav {
+      position: relative; z-index: 10; flex-shrink: 0; height: 48px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 32px;
       background: rgba(255,255,255,.92);
-      backdrop-filter: saturate(180%) blur(20px);
-      -webkit-backdrop-filter: saturate(180%) blur(20px);
-      border-bottom: 1px solid rgba(0,0,0,.06);
-      flex-shrink: 0;
-      padding: 0 24px;
-      height: 52px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      z-index: 10;
+      backdrop-filter: saturate(180%) blur(24px);
+      -webkit-backdrop-filter: saturate(180%) blur(24px);
+      border-bottom: 1px solid var(--border);
+      animation: navIn .55s cubic-bezier(.22,1,.36,1) forwards;
     }
+    @keyframes navIn { from { transform: translateY(-100%); opacity: 0; } to { transform: none; opacity: 1; } }
     .nav-logo {
-      font-size: 17px;
-      font-weight: 600;
-      letter-spacing: -.3px;
-      color: var(--text);
-      text-decoration: none;
+      font-size: 15px; font-weight: 700; letter-spacing: -.4px;
+      color: var(--text); text-decoration: none;
+      display: flex; align-items: center; gap: 8px;
     }
-    .nav-logo span { color: var(--blue); }
-    .nav-links { display: flex; align-items: center; gap: 4px; }
+    .nav-logo-mark {
+      width: 28px; height: 28px; background: var(--blue); border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .nav-links {
+      position: absolute; left: 50%; transform: translateX(-50%);
+      display: flex; align-items: center; gap: 2px;
+    }
     .nav-link {
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--subtext);
-      text-decoration: none;
-      padding: 6px 12px;
-      border-radius: 8px;
+      font-size: 13px; font-weight: 500; color: var(--sub);
+      text-decoration: none; padding: 5px 14px; border-radius: 20px;
       transition: background .15s, color .15s;
     }
-    .nav-link:hover { background: var(--bg); color: var(--text); }
-    .nav-link.active { color: var(--blue); background: var(--tag-bg); }
+    .nav-link:hover { background: rgba(0,0,0,.04); color: var(--text); }
+    html.dark .nav-link:hover { background: rgba(255,255,255,.07); }
+    .nav-link.active { color: var(--text); font-weight: 600; }
+    .dark-toggle {
+      width: 32px; height: 32px; border: none; background: transparent;
+      border-radius: 50%; cursor: pointer; color: var(--sub);
+      display: flex; align-items: center; justify-content: center;
+      transition: background .15s, color .15s;
+    }
+    .dark-toggle:hover { background: rgba(0,0,0,.06); color: var(--text); }
+    html.dark .dark-toggle:hover { background: rgba(255,255,255,.08); }
 
-    /* ── Layout ── */
+    /* ── Split layout ── */
     .pg-layout {
-      display: grid;
-      grid-template-columns: 420px 1fr;
-      flex: 1;
-      overflow: hidden;
+      display: grid; grid-template-columns: 400px 1fr;
+      flex: 1; overflow: hidden;
     }
 
     /* ── Request panel ── */
     .req-panel {
-      display: flex;
-      flex-direction: column;
-      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
       background: var(--surface);
+      border-right: 1px solid var(--border);
       overflow: hidden;
     }
 
-    .panel-header {
-      padding: 14px 20px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-shrink: 0;
+    .panel-hd {
+      padding: 13px 20px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
     }
-    .panel-title {
-      font-size: 12px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: .6px;
-      color: var(--subtext);
+    .panel-label {
+      font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .8px; color: var(--sub);
     }
 
-    /* ── URL bar ── */
+    /* URL bar */
     .url-bar {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--border);
-      background: var(--bg);
-      flex-shrink: 0;
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 14px; border-bottom: 1px solid var(--border);
+      background: var(--bg); flex-shrink: 0;
     }
-    .method-select {
-      height: 36px;
-      padding: 0 10px;
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius-sm);
-      font-size: 13px;
-      font-weight: 700;
-      font-family: inherit;
-      color: var(--blue);
-      background: var(--surface);
-      cursor: pointer;
-      outline: none;
-      appearance: none;
-      -webkit-appearance: none;
-      min-width: 72px;
+    .method-sel {
+      height: 34px; padding: 0 10px; border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: 12px; font-weight: 700; font-family: var(--font); color: var(--blue);
+      background: var(--surface); cursor: pointer; outline: none;
+      appearance: none; -webkit-appearance: none; min-width: 68px;
     }
-    .url-input {
-      flex: 1;
-      height: 36px;
-      padding: 0 12px;
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius-sm);
-      font-size: 13px;
-      font-family: "SF Mono", "Fira Code", monospace;
-      color: var(--text);
-      background: var(--surface);
-      outline: none;
+    .url-in {
+      flex: 1; height: 34px; padding: 0 12px; border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: 12px; font-family: var(--mono); color: var(--text); background: var(--surface); outline: none;
+      transition: border-color .15s;
     }
-    .url-input:focus { border-color: var(--blue); }
+    .url-in:focus { border-color: var(--blue); }
     .btn-send {
-      height: 36px;
-      padding: 0 20px;
-      background: var(--blue);
-      color: #fff;
-      border: none;
-      border-radius: var(--radius-sm);
-      font-size: 13px;
-      font-weight: 600;
-      font-family: inherit;
-      cursor: pointer;
-      transition: background .15s;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      flex-shrink: 0;
+      height: 34px; padding: 0 18px; background: var(--blue); color: #fff;
+      border: none; border-radius: 8px; font-size: 13px; font-weight: 600;
+      font-family: var(--font); cursor: pointer; display: flex; align-items: center; gap: 6px;
+      transition: background .15s, transform .15s; flex-shrink: 0;
     }
-    .btn-send:hover { background: var(--blue-dark); }
-    .btn-send:disabled { background: #B0C4E8; cursor: not-allowed; }
-    .send-spinner {
-      display: none;
-      width: 14px; height: 14px;
-      border: 2px solid rgba(255,255,255,.4);
-      border-top-color: #fff;
-      border-radius: 50%;
-      animation: spin .6s linear infinite;
+    .btn-send:hover { background: var(--blue-h); transform: translateY(-1px); }
+    .btn-send:active { transform: scale(.97); }
+    .btn-send:disabled { background: #B0C4E8; cursor: not-allowed; transform: none; }
+    .send-spin {
+      display: none; width: 13px; height: 13px;
+      border: 2px solid rgba(255,255,255,.35); border-top-color: #fff;
+      border-radius: 50%; animation: spin .6s linear infinite;
     }
-    .btn-send.loading .send-spinner { display: block; }
+    .btn-send.loading .send-spin { display: block; }
     .btn-send.loading .send-icon { display: none; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Tabs ── */
-    .tab-bar {
-      display: flex;
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
-    }
+    /* Tabs */
+    .tab-bar { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
     .tab-item {
-      font-size: 13px;
-      font-weight: 500;
-      padding: 10px 16px;
-      color: var(--subtext);
-      cursor: pointer;
-      border-bottom: 2px solid transparent;
-      transition: color .12s;
-      user-select: none;
+      font-size: 13px; font-weight: 500; padding: 9px 16px;
+      color: var(--sub); cursor: pointer;
+      border-bottom: 2px solid transparent; transition: color .12s; user-select: none;
     }
     .tab-item:hover { color: var(--text); }
     .tab-item.active { color: var(--blue); border-bottom-color: var(--blue); }
 
-    /* ── Scrollable form ── */
-    .tab-content {
-      flex: 1;
-      overflow-y: auto;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
+    /* Scrollable params form */
+    .tab-pane {
+      flex: 1; overflow-y: auto; padding: 14px 16px;
+      display: flex; flex-direction: column; gap: 11px;
     }
-    .tab-content.hidden { display: none; }
+    .tab-pane.hidden { display: none; }
 
-    /* ── Form field ── */
-    .field { display: flex; flex-direction: column; gap: 5px; }
-    .field label {
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--subtext);
+    .fsec-label {
+      font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px;
+      color: var(--sub); padding: 3px 0 2px; border-bottom: 1px solid var(--border);
     }
+
+    /* Form fields */
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    .field label { font-size: 11px; font-weight: 600; color: var(--sub); }
     .field input, .field select, .field textarea {
-      height: 38px;
-      padding: 0 12px;
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius-sm);
-      font-size: 14px;
-      font-family: inherit;
-      color: var(--text);
-      background: var(--surface);
-      outline: none;
-      transition: border-color .15s;
-      appearance: none;
-      -webkit-appearance: none;
+      height: 36px; padding: 0 11px; border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: 13px; font-family: var(--font); color: var(--text);
+      background: var(--bg); outline: none; appearance: none; -webkit-appearance: none;
+      transition: border-color .15s, box-shadow .15s;
     }
     .field input:focus, .field select:focus, .field textarea:focus {
-      border-color: var(--blue);
-      box-shadow: 0 0 0 3px rgba(0,122,255,.1);
+      border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,113,227,.1);
     }
-    .field input::placeholder { color: #AEAEB2; }
+    .field input::placeholder { color: #B0B0B5; }
     .field select {
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236E6E73' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 10px center;
-      padding-right: 30px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236E6E73' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px;
     }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
 
-    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
-    /* Sites chips inside form */
+    /* Site chips */
     .sites-grid { display: flex; flex-wrap: wrap; gap: 6px; }
     .site-chip {
       display: inline-flex; align-items: center; gap: 5px;
-      padding: 5px 12px;
-      border-radius: 20px; border: 1.5px solid var(--border);
-      font-size: 12px; font-weight: 500; color: var(--subtext);
-      cursor: pointer; user-select: none; transition: all .12s;
-      background: var(--surface);
+      padding: 5px 12px; border-radius: 20px; border: 1.5px solid var(--border);
+      font-size: 12px; font-weight: 500; color: var(--sub);
+      cursor: pointer; user-select: none; background: var(--surface);
+      transition: all .2s cubic-bezier(.34,1.56,.64,1);
     }
-    .site-chip:hover { border-color: var(--blue); color: var(--blue); }
+    .site-chip:hover { border-color: var(--blue); color: var(--blue); transform: scale(1.04); }
     .site-chip input[type="checkbox"] { display: none; }
-    .site-chip.active { background: var(--tag-bg); border-color: var(--blue); color: var(--blue); }
-    .site-chip .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--blue); opacity: 0; transition: opacity .12s; }
-    .site-chip.active .dot { opacity: 1; }
-
-    .form-section-label {
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: .5px;
-      color: var(--subtext);
-      padding: 4px 0 2px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 2px;
-    }
+    .chip-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--blue); opacity: 0; transform: scale(0); transition: opacity .15s, transform .2s cubic-bezier(.34,1.56,.64,1); }
+    .site-chip.active { background: rgba(0,113,227,.08); border-color: rgba(0,113,227,.3); color: var(--blue); font-weight: 600; }
+    .site-chip.active .chip-dot { opacity: 1; transform: scale(1); }
 
     /* JSON editor */
-    .json-editor {
-      width: 100%;
-      height: 100%;
-      border: none;
-      padding: 16px;
-      font-family: "SF Mono", "Fira Code", monospace;
-      font-size: 13px;
-      line-height: 1.6;
-      color: var(--text);
-      background: var(--bg);
-      resize: none;
-      outline: none;
-    }
-    .json-editor-wrap {
-      flex: 1;
-      overflow: hidden;
-      display: none;
-      flex-direction: column;
-    }
-    .json-editor-wrap.visible { display: flex; }
+    .json-wrap { flex: 1; display: none; flex-direction: column; overflow: hidden; }
+    .json-wrap.visible { display: flex; }
     .json-toolbar {
-      padding: 8px 16px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      gap: 8px;
-      flex-shrink: 0;
-      background: var(--surface);
+      padding: 8px 14px; border-bottom: 1px solid var(--border);
+      display: flex; gap: 7px; flex-shrink: 0; background: var(--surface);
     }
-    .json-tool-btn {
-      font-size: 12px;
-      font-weight: 500;
-      padding: 4px 10px;
-      border: 1.5px solid var(--border);
-      border-radius: 6px;
-      cursor: pointer;
-      font-family: inherit;
-      background: var(--surface);
-      color: var(--subtext);
+    .json-tool {
+      font-size: 11.5px; font-weight: 500; padding: 4px 10px;
+      border: 1.5px solid var(--border); border-radius: 6px;
+      cursor: pointer; font-family: var(--font); background: var(--bg); color: var(--sub);
       transition: all .12s;
     }
-    .json-tool-btn:hover { border-color: var(--blue); color: var(--blue); }
+    .json-tool:hover { border-color: var(--blue); color: var(--blue); }
+    .json-editor {
+      flex: 1; border: none; padding: 14px 16px; font-family: var(--mono);
+      font-size: 12.5px; line-height: 1.65; color: var(--text);
+      background: var(--bg); resize: none; outline: none;
+    }
 
     /* ── Response panel ── */
     .res-panel {
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      background: #1C1C1E;
+      display: flex; flex-direction: column; overflow: hidden;
+      background: var(--dark-bg);
     }
 
-    .res-header {
-      padding: 12px 20px;
-      border-bottom: 1px solid #333;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      flex-shrink: 0;
+    .res-hd {
+      padding: 12px 20px; border-bottom: 1px solid var(--dark-border);
+      display: flex; align-items: center; gap: 14px; flex-shrink: 0;
     }
-    .res-title {
-      font-size: 12px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: .6px;
-      color: #888;
+    .res-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: #555; }
+    .status-chip {
+      font-size: 11.5px; font-weight: 600; padding: 3px 11px; border-radius: 20px;
+      background: rgba(255,255,255,.06); color: #666; font-family: var(--mono);
+      transition: background .2s, color .2s;
     }
-    .status-pill {
-      font-size: 12px;
-      font-weight: 600;
-      padding: 3px 10px;
-      border-radius: 20px;
-      background: #2C2C2E;
-      color: #888;
-      font-family: "SF Mono", monospace;
-    }
-    .status-pill.ok     { background: rgba(52,199,89,.15);  color: #34C759; }
-    .status-pill.err    { background: rgba(255,59,48,.15);  color: #FF3B30; }
-    .status-pill.warn   { background: rgba(255,149,0,.15);  color: #FF9500; }
-    .timing-label { font-size: 12px; color: #666; }
-    .count-label  { font-size: 12px; color: #888; margin-left: auto; }
+    .status-chip.ok   { background: rgba(52,199,89,.14);  color: #34C759; }
+    .status-chip.err  { background: rgba(255,59,48,.14);  color: #FF3B30; }
+    .status-chip.warn { background: rgba(255,149,0,.14);  color: #FF9500; }
+    .timing { font-size: 12px; color: #555; }
+    .cnt-label { font-size: 12px; color: #555; margin-left: auto; }
 
-    .res-tabs {
-      display: flex;
-      border-bottom: 1px solid #333;
-      flex-shrink: 0;
-    }
+    .res-tabs { display: flex; border-bottom: 1px solid var(--dark-border); flex-shrink: 0; }
     .res-tab {
-      font-size: 13px;
-      font-weight: 500;
-      padding: 9px 16px;
-      color: #666;
-      cursor: pointer;
-      border-bottom: 2px solid transparent;
-      transition: color .12s;
-      user-select: none;
+      font-size: 13px; font-weight: 500; padding: 9px 16px;
+      color: #555; cursor: pointer; border-bottom: 2px solid transparent;
+      transition: color .12s; user-select: none;
     }
-    .res-tab:hover { color: #aaa; }
-    .res-tab.active { color: #E8E8E8; border-bottom-color: var(--blue); }
+    .res-tab:hover { color: #999; }
+    .res-tab.active { color: #E0E0E0; border-bottom-color: var(--blue); }
 
-    .res-body-wrap {
-      flex: 1;
-      overflow-y: auto;
-      padding: 16px 20px;
-      position: relative;
-    }
+    .res-body { flex: 1; overflow-y: auto; padding: 16px 20px; position: relative; }
+
     .res-placeholder {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      gap: 10px;
-      color: #555;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      height: 100%; gap: 10px; color: #444; text-align: center;
     }
-    .res-placeholder .icon { font-size: 32px; }
-    .res-placeholder p { font-size: 14px; line-height: 1.5; text-align: center; }
+    .res-placeholder .pi { font-size: 36px; margin-bottom: 4px; }
+    .res-placeholder p { font-size: 14px; line-height: 1.55; }
+    .res-placeholder strong { color: #888; }
 
-    pre.response-json {
-      font-family: "SF Mono", "Fira Code", monospace;
-      font-size: 13px;
-      line-height: 1.65;
-      color: #E8E8E8;
-      white-space: pre-wrap;
-      word-break: break-word;
+    pre.rjson {
+      font-family: var(--mono); font-size: 12.5px; line-height: 1.68;
+      color: #D0D0D0; white-space: pre-wrap; word-break: break-word;
     }
-    /* JSON syntax colours */
     .j-key  { color: #79C0FF; }
-    .j-str  { color: #99D682; }
-    .j-num  { color: #FC9B5B; }
+    .j-str  { color: #9ECA7F; }
+    .j-num  { color: #FFA966; }
     .j-bool { color: #F97680; }
-    .j-null { color: #888; }
+    .j-null { color: #636375; }
 
-    .copy-res-btn {
-      position: absolute;
-      top: 12px; right: 16px;
-      font-size: 11px;
-      padding: 4px 10px;
-      border-radius: 6px;
-      border: 1px solid #444;
-      background: #2C2C2E;
-      color: #AAA;
-      cursor: pointer;
-      font-family: inherit;
-      transition: background .12s;
+    .copy-res {
+      position: absolute; top: 12px; right: 16px;
+      font-size: 11px; padding: 4px 10px; border-radius: 6px;
+      border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.05); color: #888;
+      cursor: pointer; font-family: var(--font); transition: background .12s, color .12s;
     }
-    .copy-res-btn:hover { background: #3A3A3C; color: #fff; }
+    .copy-res:hover { background: rgba(255,255,255,.1); color: #ddd; }
 
-    /* Jobs list tab */
+    /* Jobs list view */
     .jobs-list { display: none; flex-direction: column; gap: 8px; }
     .jobs-list.visible { display: flex; }
-    .mini-card {
-      background: #2C2C2E;
-      border-radius: var(--radius-sm);
-      padding: 12px 14px;
-    }
-    .mc-title  { font-size: 14px; font-weight: 600; color: #E8E8E8; margin-bottom: 3px; }
-    .mc-sub    { font-size: 12px; color: #888; }
-    .mc-link   { font-size: 12px; color: var(--blue); text-decoration: none; }
+    .mini-card { background: var(--dark-surf); border-radius: 10px; padding: 12px 14px; border: 1px solid var(--dark-border); }
+    .mc-title { font-size: 14px; font-weight: 600; color: #E0E0E0; margin-bottom: 3px; }
+    .mc-sub   { font-size: 12px; color: #666; }
+    .mc-meta  { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 7px; }
+    .mc-tag   { font-size: 11px; background: rgba(255,255,255,.06); color: #888; padding: 3px 8px; border-radius: 8px; }
+    .mc-tag.remote { color: #34C759; background: rgba(52,199,89,.12); }
+    .mc-link  { font-size: 12px; color: var(--blue); text-decoration: none; display: block; margin-top: 6px; }
     .mc-link:hover { text-decoration: underline; }
-    .mc-meta   { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
-    .mc-tag    { font-size: 11px; background: #3A3A3C; color: #AAA; padding: 2px 8px; border-radius: 10px; }
-    .mc-tag.remote { color: #34C759; background: rgba(52,199,89,.15); }
 
-    /* Scrollbar */
-    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar { width: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(128,128,128,.35); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb { background: rgba(128,128,128,.25); border-radius: 10px; }
 
     @media (max-width: 800px) {
       .pg-layout { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; overflow: auto; }
       body { overflow: auto; height: auto; }
-      .res-panel { min-height: 400px; }
+      .res-panel { min-height: 420px; }
     }
   </style>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <script>if(localStorage.getItem('theme')==='dark')document.documentElement.classList.add('dark');</script>
 </head>
 <body>
 
 <nav>
-  <a class="nav-logo" href="/">Job <span>API</span></a>
+  <a class="nav-logo" href="/">
+    <div class="nav-logo-mark">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <circle cx="5.5" cy="5.5" r="3.8" stroke="white" stroke-width="1.6"/>
+        <path d="M8.5 8.5L12.5 12.5" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+    </div>
+    Job API
+  </a>
   <div class="nav-links">
     <a href="/" class="nav-link">Search</a>
     <a href="/docs.html" class="nav-link">Docs</a>
     <a href="/playground.html" class="nav-link active">Playground</a>
   </div>
-  <button class="dark-toggle" id="darkToggle" title="Toggle dark mode"><i class="fa-solid fa-moon"></i></button>
+  <button class="dark-toggle" id="darkToggle" title="Toggle theme">
+    <svg id="iconMoon" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 9.5A6.5 6.5 0 017.5 3a6.5 6.5 0 100 13A6.5 6.5 0 0014 9.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+    <svg id="iconSun" width="16" height="16" viewBox="0 0 16 16" fill="none" style="display:none"><circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5v1M8 13.5v1M1.5 8h1M13.5 8h1M3.4 3.4l.7.7M11.9 11.9l.7.7M3.4 12.6l.7-.7M11.9 4.1l.7-.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+  </button>
 </nav>
 
 <div class="pg-layout">
 
   <!-- ── REQUEST PANEL ── -->
   <div class="req-panel">
-    <div class="panel-header">
-      <span class="panel-title">Request</span>
+    <div class="panel-hd">
+      <span class="panel-label">Request</span>
     </div>
 
-    <!-- URL bar -->
     <div class="url-bar">
-      <select class="method-select" id="methodSelect" onchange="onMethodChange()">
+      <select class="method-sel" id="methodSel" onchange="onMethodChange()">
         <option value="GET">GET</option>
         <option value="POST">POST</option>
       </select>
-      <input class="url-input" id="urlInput" value="/api/jobs" readonly />
+      <input class="url-in" id="urlIn" value="/api/jobs" readonly />
       <button class="btn-send" id="sendBtn" onclick="sendRequest()">
         <span class="send-icon">
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1 6.5h11M7 1.5l5 5-5 5" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M1 6h10M7 1.5l4.5 4.5L7 10.5" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
         </span>
-        <div class="send-spinner"></div>
+        <div class="send-spin"></div>
         Send
       </button>
     </div>
 
-    <!-- Tabs -->
     <div class="tab-bar">
       <div class="tab-item active" onclick="switchReqTab(this,'params')">Params</div>
       <div class="tab-item" onclick="switchReqTab(this,'body')">Body (JSON)</div>
     </div>
 
     <!-- Params tab -->
-    <div class="tab-content" id="req-tab-params">
-
-      <div class="form-section-label">Job Boards</div>
+    <div class="tab-pane" id="req-params">
+      <div class="fsec-label">Job Boards</div>
       <div class="sites-grid" id="sitesGrid">
-        <label class="site-chip active"><input type="checkbox" value="indeed" checked><span class="dot"></span>Indeed</label>
-        <label class="site-chip active"><input type="checkbox" value="linkedin" checked><span class="dot"></span>LinkedIn</label>
-        <label class="site-chip"><input type="checkbox" value="glassdoor"><span class="dot"></span>Glassdoor</label>
-        <label class="site-chip"><input type="checkbox" value="zip_recruiter"><span class="dot"></span>ZipRecruiter</label>
-        <label class="site-chip"><input type="checkbox" value="google"><span class="dot"></span>Google</label>
-        <label class="site-chip"><input type="checkbox" value="bayt"><span class="dot"></span>Bayt</label>
-        <label class="site-chip"><input type="checkbox" value="naukri"><span class="dot"></span>Naukri</label>
-        <label class="site-chip"><input type="checkbox" value="bdjobs"><span class="dot"></span>BDJobs</label>
+        <label class="site-chip active"><input type="checkbox" value="indeed" checked><span class="chip-dot"></span>Indeed</label>
+        <label class="site-chip active"><input type="checkbox" value="linkedin" checked><span class="chip-dot"></span>LinkedIn</label>
+        <label class="site-chip"><input type="checkbox" value="glassdoor"><span class="chip-dot"></span>Glassdoor</label>
+        <label class="site-chip"><input type="checkbox" value="zip_recruiter"><span class="chip-dot"></span>ZipRecruiter</label>
+        <label class="site-chip"><input type="checkbox" value="google"><span class="chip-dot"></span>Google</label>
+        <label class="site-chip"><input type="checkbox" value="bayt"><span class="chip-dot"></span>Bayt</label>
+        <label class="site-chip"><input type="checkbox" value="naukri"><span class="chip-dot"></span>Naukri</label>
+        <label class="site-chip"><input type="checkbox" value="bdjobs"><span class="chip-dot"></span>BDJobs</label>
       </div>
 
-      <div class="form-section-label">Search</div>
+      <div class="fsec-label">Search</div>
       <div class="field">
         <label>search_term</label>
-        <input id="p_search_term" type="text" placeholder="e.g. software engineer" />
+        <input id="p_st" type="text" placeholder="e.g. software engineer" />
       </div>
       <div class="field-row">
-        <div class="field">
-          <label>location</label>
-          <input id="p_location" type="text" placeholder="New York, NY" />
-        </div>
+        <div class="field"><label>location</label><input id="p_loc" type="text" placeholder="New York, NY" /></div>
         <div class="field">
           <label>country_indeed</label>
-          <select id="p_country_indeed">
+          <select id="p_ci">
             <option value="">Any</option>
             <option value="USA" selected>USA</option>
             <option value="UK">UK</option>
@@ -559,11 +399,11 @@
         </div>
       </div>
 
-      <div class="form-section-label">Filters</div>
+      <div class="fsec-label">Filters</div>
       <div class="field-row">
         <div class="field">
           <label>job_type</label>
-          <select id="p_job_type">
+          <select id="p_jt">
             <option value="">Any</option>
             <option value="fulltime">Full-time</option>
             <option value="parttime">Part-time</option>
@@ -573,102 +413,66 @@
         </div>
         <div class="field">
           <label>is_remote</label>
-          <select id="p_is_remote">
-            <option value="">Any</option>
-            <option value="true">Remote only</option>
-            <option value="false">On-site only</option>
-          </select>
+          <select id="p_ir"><option value="">Any</option><option value="true">Remote only</option><option value="false">On-site only</option></select>
         </div>
       </div>
       <div class="field-row">
-        <div class="field">
-          <label>results_wanted</label>
-          <input id="p_results_wanted" type="number" placeholder="15" min="1" max="100" value="15"/>
-        </div>
-        <div class="field">
-          <label>hours_old</label>
-          <input id="p_hours_old" type="number" placeholder="e.g. 72"/>
-        </div>
+        <div class="field"><label>results_wanted</label><input id="p_rw" type="number" placeholder="15" value="15" min="1" max="100"/></div>
+        <div class="field"><label>hours_old</label><input id="p_ho" type="number" placeholder="e.g. 72"/></div>
       </div>
       <div class="field-row">
-        <div class="field">
-          <label>distance (miles)</label>
-          <input id="p_distance" type="number" placeholder="50"/>
-        </div>
-        <div class="field">
-          <label>offset</label>
-          <input id="p_offset" type="number" placeholder="0"/>
-        </div>
+        <div class="field"><label>distance (miles)</label><input id="p_dist" type="number" placeholder="50"/></div>
+        <div class="field"><label>offset</label><input id="p_off" type="number" placeholder="0"/></div>
       </div>
 
-      <div class="form-section-label">Advanced</div>
+      <div class="fsec-label">Advanced</div>
       <div class="field-row">
         <div class="field">
           <label>description_format</label>
-          <select id="p_description_format">
-            <option value="markdown" selected>markdown</option>
-            <option value="html">html</option>
-          </select>
+          <select id="p_df"><option value="markdown" selected>markdown</option><option value="html">html</option></select>
         </div>
         <div class="field">
           <label>easy_apply</label>
-          <select id="p_easy_apply">
-            <option value="">Any</option>
-            <option value="true">Yes</option>
-            <option value="false">No</option>
-          </select>
+          <select id="p_ea"><option value="">Any</option><option value="true">Yes</option><option value="false">No</option></select>
         </div>
       </div>
-      <div class="field">
-        <label>linkedin_company_ids (comma-separated)</label>
-        <input id="p_linkedin_company_ids" type="text" placeholder="1441,2382"/>
-      </div>
-      <div class="field">
-        <label>google_search_term</label>
-        <input id="p_google_search_term" type="text" placeholder="software engineer jobs near New York since yesterday"/>
-      </div>
+      <div class="field"><label>linkedin_company_ids</label><input id="p_lci" type="text" placeholder="1441,2382"/></div>
+      <div class="field"><label>google_search_term</label><input id="p_gst" type="text" placeholder="software engineer jobs near New York"/></div>
       <div class="field-row">
         <div class="field">
           <label>linkedin_fetch_description</label>
-          <select id="p_linkedin_fetch_description">
-            <option value="false" selected>false (fast)</option>
-            <option value="true">true (slow)</option>
-          </select>
+          <select id="p_lfd"><option value="false" selected>false (fast)</option><option value="true">true (slow)</option></select>
         </div>
         <div class="field">
           <label>enforce_annual_salary</label>
-          <select id="p_enforce_annual_salary">
-            <option value="false" selected>false</option>
-            <option value="true">true</option>
-          </select>
+          <select id="p_eas"><option value="false" selected>false</option><option value="true">true</option></select>
         </div>
       </div>
     </div>
 
     <!-- Body (JSON) tab -->
-    <div class="json-editor-wrap" id="req-tab-body">
+    <div class="json-wrap" id="req-body">
       <div class="json-toolbar">
-        <button class="json-tool-btn" onclick="fillTemplate()">Fill Template</button>
-        <button class="json-tool-btn" onclick="prettify()">Prettify</button>
-        <button class="json-tool-btn" onclick="clearBody()">Clear</button>
+        <button class="json-tool" onclick="fillTpl()">Fill Template</button>
+        <button class="json-tool" onclick="prettify()">Prettify</button>
+        <button class="json-tool" onclick="clearBody()">Clear</button>
       </div>
       <textarea class="json-editor" id="jsonBody" placeholder='{
   "search_term": "software engineer",
   "location": "New York, NY",
   "site_name": ["indeed", "linkedin"],
-  "results_wanted": 15,
-  "hours_old": 72
+  "results_wanted": 15
 }'></textarea>
     </div>
   </div>
 
   <!-- ── RESPONSE PANEL ── -->
   <div class="res-panel">
-    <div class="res-header">
-      <span class="res-title">Response</span>
-      <span class="status-pill" id="statusPill">—</span>
-      <span class="timing-label" id="timingLabel"></span>
-      <span class="count-label" id="countLabel"></span>
+    <div class="res-hd">
+      <span class="res-label">Response</span>
+      <span class="status-chip" id="statusChip">&mdash;</span>
+      <span class="timing" id="timing"></span>
+      <span class="cnt-label" id="cntLabel"></span>
     </div>
 
     <div class="res-tabs">
@@ -676,27 +480,26 @@
       <div class="res-tab" onclick="switchResTab(this,'jobs')">Jobs</div>
     </div>
 
-    <div class="res-body-wrap" id="res-json-view">
+    <div class="res-body" id="res-json-view">
       <div class="res-placeholder" id="resPlaceholder">
-        <div class="icon">🚀</div>
-        <p>Configure your request and hit <strong style="color:#E8E8E8">Send</strong><br>to see the response here.</p>
+        <div class="pi">&#128640;</div>
+        <p>Configure your request<br>and hit <strong>Send</strong> to see the response.</p>
       </div>
-      <button class="copy-res-btn" id="copyResBtn" style="display:none" onclick="copyResponse()">Copy</button>
-      <pre class="response-json" id="responseJson"></pre>
+      <button class="copy-res" id="copyResBtn" style="display:none" onclick="copyRes()">Copy</button>
+      <pre class="rjson" id="rjsonEl"></pre>
     </div>
 
-    <div class="res-body-wrap" id="res-jobs-view" style="display:none">
+    <div class="res-body" id="res-jobs-view" style="display:none">
       <div class="jobs-list" id="jobsList"></div>
     </div>
   </div>
-
 </div>
 
 <script>
   let lastResponse = null;
   let activeResTab = 'json';
 
-  // ── Site chips ──
+  // Chips
   document.querySelectorAll('.site-chip').forEach(chip => {
     chip.addEventListener('click', () => {
       const cb = chip.querySelector('input');
@@ -706,10 +509,7 @@
   });
 
   function onMethodChange() {
-    const method = document.getElementById('methodSelect').value;
-    const paramsTab = document.querySelector('.tab-item[onclick*="params"]');
-    if (method === 'POST') {
-      // Switch to body tab
+    if (document.getElementById('methodSel').value === 'POST') {
       switchReqTab(document.querySelector('.tab-item[onclick*="body"]'), 'body');
     }
   }
@@ -717,14 +517,14 @@
   function switchReqTab(btn, tab) {
     document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
     btn.classList.add('active');
-    document.getElementById('req-tab-params').style.display = 'none';
-    document.getElementById('req-tab-params').classList.add('hidden');
-    document.getElementById('req-tab-body').classList.remove('visible');
+    const params = document.getElementById('req-params');
+    const body   = document.getElementById('req-body');
     if (tab === 'params') {
-      document.getElementById('req-tab-params').style.display = 'flex';
-      document.getElementById('req-tab-params').classList.remove('hidden');
+      params.style.display = 'flex';
+      body.classList.remove('visible');
     } else {
-      document.getElementById('req-tab-body').classList.add('visible');
+      params.style.display = 'none';
+      body.classList.add('visible');
     }
   }
 
@@ -732,73 +532,68 @@
     document.querySelectorAll('.res-tab').forEach(t => t.classList.remove('active'));
     btn.classList.add('active');
     activeResTab = tab;
-    if (tab === 'json') {
-      document.getElementById('res-json-view').style.display = 'block';
-      document.getElementById('res-jobs-view').style.display = 'none';
-    } else {
-      document.getElementById('res-json-view').style.display = 'none';
-      document.getElementById('res-jobs-view').style.display = 'block';
-      renderJobsTab();
-    }
+    document.getElementById('res-json-view').style.display = tab === 'json' ? 'block' : 'none';
+    document.getElementById('res-jobs-view').style.display = tab === 'jobs' ? 'block' : 'none';
+    if (tab === 'jobs') renderJobsTab();
   }
 
   function buildParams() {
-    const get = id => document.getElementById(id)?.value?.trim() || '';
+    const get = id => (document.getElementById(id)?.value?.trim() || '');
     const sites = [...document.querySelectorAll('.site-chip input:checked')].map(c => c.value);
-    const params = new URLSearchParams();
-    if (sites.length) params.set('site_name', sites.join(','));
-    if (get('p_search_term'))             params.set('search_term',   get('p_search_term'));
-    if (get('p_location'))                params.set('location',      get('p_location'));
-    if (get('p_country_indeed'))          params.set('country_indeed',get('p_country_indeed'));
-    if (get('p_job_type'))                params.set('job_type',      get('p_job_type'));
-    if (get('p_is_remote'))               params.set('is_remote',     get('p_is_remote'));
-    if (get('p_results_wanted'))          params.set('results_wanted',get('p_results_wanted'));
-    if (get('p_hours_old'))               params.set('hours_old',     get('p_hours_old'));
-    if (get('p_distance'))                params.set('distance',      get('p_distance'));
-    if (get('p_offset'))                  params.set('offset',        get('p_offset'));
-    if (get('p_description_format'))      params.set('description_format', get('p_description_format'));
-    if (get('p_easy_apply'))              params.set('easy_apply',    get('p_easy_apply'));
-    if (get('p_linkedin_company_ids'))    params.set('linkedin_company_ids', get('p_linkedin_company_ids'));
-    if (get('p_google_search_term'))      params.set('google_search_term',   get('p_google_search_term'));
-    if (get('p_linkedin_fetch_description') === 'true') params.set('linkedin_fetch_description', 'true');
-    if (get('p_enforce_annual_salary') === 'true')      params.set('enforce_annual_salary', 'true');
-    return params;
+    const p = new URLSearchParams();
+    if (sites.length) p.set('site_name', sites.join(','));
+    if (get('p_st'))    p.set('search_term',   get('p_st'));
+    if (get('p_loc'))   p.set('location',      get('p_loc'));
+    if (get('p_ci'))    p.set('country_indeed', get('p_ci'));
+    if (get('p_jt'))    p.set('job_type',       get('p_jt'));
+    if (get('p_ir'))    p.set('is_remote',      get('p_ir'));
+    if (get('p_rw'))    p.set('results_wanted', get('p_rw'));
+    if (get('p_ho'))    p.set('hours_old',      get('p_ho'));
+    if (get('p_dist'))  p.set('distance',       get('p_dist'));
+    if (get('p_off'))   p.set('offset',         get('p_off'));
+    if (get('p_df'))    p.set('description_format', get('p_df'));
+    if (get('p_ea'))    p.set('easy_apply',     get('p_ea'));
+    if (get('p_lci'))   p.set('linkedin_company_ids', get('p_lci'));
+    if (get('p_gst'))   p.set('google_search_term',   get('p_gst'));
+    if (get('p_lfd') === 'true')  p.set('linkedin_fetch_description', 'true');
+    if (get('p_eas') === 'true')  p.set('enforce_annual_salary', 'true');
+    return p;
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
   async function sendRequest() {
-    const method  = document.getElementById('methodSelect').value;
+    const method  = document.getElementById('methodSel').value;
     const btn     = document.getElementById('sendBtn');
-    const isBody  = document.getElementById('req-tab-body').classList.contains('visible');
+    const isBody  = document.getElementById('req-body').classList.contains('visible');
 
-    btn.disabled = true;
-    btn.classList.add('loading');
+    btn.disabled = true; btn.classList.add('loading');
 
-    const statusPill  = document.getElementById('statusPill');
-    const timingLabel = document.getElementById('timingLabel');
-    const countLabel  = document.getElementById('countLabel');
-    statusPill.className = 'status-pill';
-    statusPill.textContent = '…';
-    timingLabel.textContent = '';
-    countLabel.textContent = '';
+    const chip    = document.getElementById('statusChip');
+    const timing  = document.getElementById('timing');
+    const cnt     = document.getElementById('cntLabel');
+    chip.className = 'status-chip';
+    chip.textContent = '\u2026';
+    timing.textContent = '';
+    cnt.textContent = '';
     document.getElementById('resPlaceholder').style.display = 'none';
-    document.getElementById('responseJson').textContent = '';
+    document.getElementById('rjsonEl').innerHTML = '';
     document.getElementById('copyResBtn').style.display = 'none';
 
     const t0 = performance.now();
 
     try {
-      let res, url = '/api/jobs';
+      let res;
       if (method === 'GET' || !isBody) {
-        const params = buildParams();
-        res = await fetch(`${url}?${params}`, { method: 'GET' });
+        res = await fetch(`/api/jobs?${buildParams()}`, { method: 'GET' });
       } else {
-        let body = document.getElementById('jsonBody').value.trim();
-        if (!body) body = '{}';
+        let body = document.getElementById('jsonBody').value.trim() || '{}';
         let parsed;
-        try { parsed = JSON.parse(body); } catch(e) {
-          showError(`Invalid JSON: ${e.message}`); btn.disabled = false; btn.classList.remove('loading'); return;
-        }
-        res = await fetch(url, {
+        try { parsed = JSON.parse(body); }
+        catch(e) { showErr(`Invalid JSON: ${e.message}`); btn.disabled=false; btn.classList.remove('loading'); return; }
+        res = await fetch('/api/jobs', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(parsed),
@@ -809,85 +604,67 @@
       const data = await res.json();
       lastResponse = data;
 
-      // Status pill
-      statusPill.textContent = `${res.status} ${res.statusText || (res.ok ? 'OK' : 'Error')}`;
-      statusPill.className   = 'status-pill ' + (res.ok ? 'ok' : res.status < 500 ? 'warn' : 'err');
-      timingLabel.textContent = `${ms} ms`;
-      if (data.count != null) countLabel.textContent = `${data.count} job${data.count !== 1 ? 's' : ''}`;
+      chip.textContent  = `${res.status} ${res.statusText || (res.ok ? 'OK' : 'Error')}`;
+      chip.className    = 'status-chip ' + (res.ok ? 'ok' : res.status < 500 ? 'warn' : 'err');
+      timing.textContent = `${ms} ms`;
+      if (data.count != null) cnt.textContent = `${data.count} job${data.count !== 1 ? 's' : ''}`;
 
-      // Pretty JSON
-      document.getElementById('responseJson').innerHTML = syntaxHighlight(JSON.stringify(data, null, 2));
+      document.getElementById('rjsonEl').innerHTML = syntaxHL(JSON.stringify(data, null, 2));
       document.getElementById('copyResBtn').style.display = 'block';
 
-      // If jobs tab is active, render
       if (activeResTab === 'jobs') renderJobsTab();
-
-    } catch (err) {
-      showError(err.message);
+    } catch(err) {
+      showErr(err.message);
     } finally {
-      btn.disabled = false;
-      btn.classList.remove('loading');
+      btn.disabled = false; btn.classList.remove('loading');
     }
   }
 
-  function showError(msg) {
-    const statusPill = document.getElementById('statusPill');
-    statusPill.textContent = 'Error';
-    statusPill.className = 'status-pill err';
-    document.getElementById('responseJson').innerHTML = `<span style="color:#FF3B30">${esc(msg)}</span>`;
+  function showErr(msg) {
+    const chip = document.getElementById('statusChip');
+    chip.textContent = 'Error'; chip.className = 'status-chip err';
+    document.getElementById('rjsonEl').innerHTML = `<span style="color:#FF3B30">${esc(msg)}</span>`;
     document.getElementById('copyResBtn').style.display = 'block';
   }
 
   function renderJobsTab() {
     const list = document.getElementById('jobsList');
     if (!lastResponse || !lastResponse.jobs) {
-      list.innerHTML = '<p style="color:#666;text-align:center;padding:32px">No job data yet — run a search first.</p>';
-      list.classList.add('visible');
-      return;
+      list.innerHTML = '<p style="color:#555;text-align:center;padding:32px 0">No job data yet &mdash; run a search first.</p>';
+      list.classList.add('visible'); return;
     }
     const jobs = lastResponse.jobs;
     if (!jobs.length) {
-      list.innerHTML = '<p style="color:#666;text-align:center;padding:32px">No jobs found for that query.</p>';
-      list.classList.add('visible');
-      return;
+      list.innerHTML = '<p style="color:#555;text-align:center;padding:32px 0">No jobs found for that query.</p>';
+      list.classList.add('visible'); return;
     }
     list.innerHTML = jobs.map(j => {
-      const loc = j.location ? [j.location.city, j.location.state, j.location.country].filter(Boolean).join(', ') : '';
+      const loc  = j.location ? [j.location.city, j.location.state, j.location.country].filter(Boolean).join(', ') : '';
       const tags = [j.site, j.job_type, j.is_remote ? 'remote' : null, loc].filter(Boolean);
       return `<div class="mini-card">
         <div class="mc-title">${esc(j.title || 'Untitled')}</div>
-        <div class="mc-sub">${esc(j.company || '')}${j.date_posted ? ' · ' + j.date_posted : ''}</div>
-        <div class="mc-meta">
-          ${tags.map(t => `<span class="mc-tag${t==='remote'?' remote':''}">${esc(t)}</span>`).join('')}
-        </div>
-        ${j.job_url ? `<a class="mc-link" href="${esc(j.job_url)}" target="_blank" rel="noopener">Apply →</a>` : ''}
+        <div class="mc-sub">${esc(j.company || '')}${j.date_posted ? ' &middot; ' + j.date_posted : ''}</div>
+        <div class="mc-meta">${tags.map(t => `<span class="mc-tag${t==='remote'?' remote':''}">${esc(t)}</span>`).join('')}</div>
+        ${j.job_url ? `<a class="mc-link" href="${esc(j.job_url)}" target="_blank" rel="noopener">Apply &rarr;</a>` : ''}
       </div>`;
     }).join('');
     list.classList.add('visible');
   }
 
-  function syntaxHighlight(json) {
+  function syntaxHL(json) {
     return json
       .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-      .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, match => {
+      .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, m => {
         let cls = 'j-num';
-        if (/^"/.test(match)) {
-          cls = /:$/.test(match) ? 'j-key' : 'j-str';
-        } else if (/true|false/.test(match)) {
-          cls = 'j-bool';
-        } else if (/null/.test(match)) {
-          cls = 'j-null';
-        }
-        return `<span class="${cls}">${match}</span>`;
+        if (/^"/.test(m)) cls = /:$/.test(m) ? 'j-key' : 'j-str';
+        else if (/true|false/.test(m)) cls = 'j-bool';
+        else if (/null/.test(m)) cls = 'j-null';
+        return `<span class="${cls}">${m}</span>`;
       });
   }
 
-  function esc(s) {
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
-
-  function copyResponse() {
-    const text = document.getElementById('responseJson').innerText;
+  function copyRes() {
+    const text = document.getElementById('rjsonEl').innerText;
     navigator.clipboard.writeText(text).then(() => {
       const btn = document.getElementById('copyResBtn');
       btn.textContent = 'Copied!';
@@ -895,45 +672,49 @@
     });
   }
 
-  function fillTemplate() {
+  function fillTpl() {
     document.getElementById('jsonBody').value = JSON.stringify({
-      site_name: ["indeed", "linkedin"],
-      search_term: "software engineer",
-      location: "New York, NY",
-      country_indeed: "USA",
+      site_name: ['indeed', 'linkedin'],
+      search_term: 'software engineer',
+      location: 'New York, NY',
+      country_indeed: 'USA',
       results_wanted: 15,
       hours_old: 72,
-      job_type: "fulltime",
+      job_type: 'fulltime',
       is_remote: false,
-      description_format: "markdown"
+      description_format: 'markdown',
     }, null, 2);
   }
 
   function prettify() {
     const ta = document.getElementById('jsonBody');
-    try {
-      ta.value = JSON.stringify(JSON.parse(ta.value), null, 2);
-    } catch(e) {
-      alert('Invalid JSON: ' + e.message);
-    }
+    try { ta.value = JSON.stringify(JSON.parse(ta.value), null, 2); }
+    catch(e) { alert('Invalid JSON: ' + e.message); }
   }
 
-  function clearBody() {
-    document.getElementById('jsonBody').value = '';
-  }
+  function clearBody() { document.getElementById('jsonBody').value = ''; }
 
-  // Send on Ctrl+Enter
+  // Ctrl/Cmd + Enter to send
   document.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') sendRequest();
   });
 
-  // ── Dark mode ──────────────────────────────────────────────────────────────
-  (function(){
+  // Dark mode
+  (function() {
     const root = document.documentElement;
     const btn  = document.getElementById('darkToggle');
-    function apply(on){ root.classList.toggle('dark', on); btn.innerHTML = on ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>'; }
+    const moon = document.getElementById('iconMoon');
+    const sun  = document.getElementById('iconSun');
+    function apply(on) {
+      root.classList.toggle('dark', on);
+      moon.style.display = on ? 'none' : 'block';
+      sun.style.display  = on ? 'block' : 'none';
+    }
     apply(localStorage.getItem('theme') === 'dark');
-    btn.addEventListener('click', function(){ const d = !root.classList.contains('dark'); apply(d); localStorage.setItem('theme', d ? 'dark' : 'light'); });
+    btn.addEventListener('click', () => {
+      const d = !root.classList.contains('dark');
+      apply(d); localStorage.setItem('theme', d ? 'dark' : 'light');
+    });
   })();
 </script>
 </body>

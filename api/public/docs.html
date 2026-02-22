@@ -4,440 +4,304 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Docs — Job API</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --blue:        #007AFF;
-      --blue-dark:   #0062CC;
-      --bg:          #F5F5F7;
-      --surface:     #FFFFFF;
-      --border:      #D2D2D7;
-      --text:        #1D1D1F;
-      --subtext:     #6E6E73;
-      --tag-bg:      #F0F4FF;
-      --tag-text:    #0051D6;
-      --green:       #34C759;
-      --red:         #FF3B30;
-      --orange:      #FF9500;
-      --purple:      #AF52DE;
-      --radius:      14px;
-      --radius-sm:   8px;
-      --shadow-card: 0 1px 6px rgba(0,0,0,.06), 0 4px 24px rgba(0,0,0,.06);
+      --blue:    #0071E3;
+      --blue-h:  #0077ED;
+      --bg:      #F5F5F7;
+      --surface: #FFFFFF;
+      --border:  rgba(0,0,0,.08);
+      --text:    #1D1D1F;
+      --sub:     #6E6E73;
+      --green:   #34C759;
+      --red:     #FF3B30;
+      --orange:  #FF9500;
+      --r:       18px;
+      --rs:      10px;
+      --font:    'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      --mono:    'JetBrains Mono', monospace;
     }
-
-    /* ── Dark mode ── */
     html.dark {
-      --bg:          #1C1C1E;
-      --surface:     #2C2C2E;
-      --border:      #3A3A3C;
-      --text:        #F5F5F7;
-      --subtext:     #8E8E93;
-      --tag-bg:      rgba(0,122,255,.18);
-      --tag-text:    #64B0FF;
-      --shadow-card: 0 1px 6px rgba(0,0,0,.4), 0 4px 24px rgba(0,0,0,.4);
+      --bg:      #000;
+      --surface: #1C1C1E;
+      --border:  rgba(255,255,255,.08);
+      --text:    #F5F5F7;
+      --sub:     #98989D;
     }
-    html.dark nav {
-      background: rgba(28,28,30,.88);
-      border-bottom-color: rgba(255,255,255,.08);
-    }
-    html.dark input, html.dark textarea, html.dark select {
-      background: #3A3A3C; color: var(--text); border-color: var(--border);
-    }
-    html.dark input::placeholder, html.dark textarea::placeholder { color: var(--subtext); }
-    .dark-toggle {
-      background: none;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 5px 10px;
-      cursor: pointer;
-      font-size: 15px;
-      line-height: 1;
-      color: var(--subtext);
-      transition: background .15s;
-      margin-left: 4px;
-    }
-    .dark-toggle:hover { background: var(--tag-bg); }
+    html.dark nav { background: rgba(0,0,0,.78); border-bottom-color: rgba(255,255,255,.06); }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
-      background: var(--bg);
-      color: var(--text);
+      font-family: var(--font);
+      background: var(--bg); color: var(--text);
       min-height: 100vh;
     }
 
     /* ── Nav ── */
     nav {
-      background: rgba(255,255,255,.82);
-      backdrop-filter: saturate(180%) blur(20px);
-      -webkit-backdrop-filter: saturate(180%) blur(20px);
-      border-bottom: 1px solid rgba(0,0,0,.06);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      padding: 0 24px;
-      height: 52px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      position: sticky; top: 0; z-index: 100; height: 48px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 32px;
+      background: rgba(255,255,255,.78);
+      backdrop-filter: saturate(180%) blur(24px);
+      -webkit-backdrop-filter: saturate(180%) blur(24px);
+      border-bottom: 1px solid var(--border);
+      animation: navIn .55s cubic-bezier(.22,1,.36,1) forwards;
     }
+    @keyframes navIn { from { transform: translateY(-100%); opacity: 0; } to { transform: none; opacity: 1; } }
     .nav-logo {
-      font-size: 17px;
-      font-weight: 600;
-      letter-spacing: -.3px;
-      color: var(--text);
-      text-decoration: none;
+      font-size: 15px; font-weight: 700; letter-spacing: -.4px;
+      color: var(--text); text-decoration: none;
+      display: flex; align-items: center; gap: 8px;
     }
-    .nav-logo span { color: var(--blue); }
-    .nav-links { display: flex; align-items: center; gap: 4px; }
+    .nav-logo-mark {
+      width: 28px; height: 28px; background: var(--blue); border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .nav-links {
+      position: absolute; left: 50%; transform: translateX(-50%);
+      display: flex; align-items: center; gap: 2px;
+    }
     .nav-link {
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--subtext);
-      text-decoration: none;
-      padding: 6px 12px;
-      border-radius: 8px;
+      font-size: 13px; font-weight: 500; color: var(--sub);
+      text-decoration: none; padding: 5px 14px; border-radius: 20px;
       transition: background .15s, color .15s;
     }
-    .nav-link:hover { background: var(--bg); color: var(--text); }
-    .nav-link.active { color: var(--blue); background: var(--tag-bg); }
+    .nav-link:hover { background: rgba(0,0,0,.04); color: var(--text); }
+    html.dark .nav-link:hover { background: rgba(255,255,255,.07); }
+    .nav-link.active { color: var(--text); font-weight: 600; }
+    .dark-toggle {
+      width: 32px; height: 32px; border: none; background: transparent;
+      border-radius: 50%; cursor: pointer; color: var(--sub);
+      display: flex; align-items: center; justify-content: center;
+      transition: background .15s, color .15s;
+    }
+    .dark-toggle:hover { background: rgba(0,0,0,.06); color: var(--text); }
+    html.dark .dark-toggle:hover { background: rgba(255,255,255,.08); }
 
-    /* ── Layout ── */
+    /* ── Page layout ── */
     .page-wrap {
-      display: flex;
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 40px 24px 80px;
-      gap: 40px;
+      display: flex; max-width: 1160px; margin: 0 auto;
+      padding: 48px 24px 100px; gap: 48px;
     }
 
-    /* ── Sidebar TOC ── */
-    .sidebar {
-      width: 220px;
-      flex-shrink: 0;
-    }
-    .sidebar-inner {
-      position: sticky;
-      top: 72px;
-    }
-    .toc-section {
-      margin-bottom: 24px;
-    }
-    .toc-label {
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: .6px;
-      color: var(--subtext);
-      margin-bottom: 8px;
-      padding-left: 10px;
+    /* ── Sidebar ── */
+    .sidebar { width: 210px; flex-shrink: 0; }
+    .sidebar-inner { position: sticky; top: 68px; }
+    .toc-group { margin-bottom: 28px; }
+    .toc-group-label {
+      font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .85px;
+      color: var(--sub); margin-bottom: 8px; padding-left: 10px;
     }
     .toc-link {
-      display: block;
-      font-size: 14px;
-      color: var(--subtext);
-      text-decoration: none;
-      padding: 5px 10px;
-      border-radius: var(--radius-sm);
-      transition: background .12s, color .12s;
-      border-left: 2px solid transparent;
+      display: block; font-size: 13.5px; color: var(--sub);
+      text-decoration: none; padding: 5px 10px;
+      border-radius: var(--rs); border-left: 2px solid transparent;
+      transition: background .12s, color .12s, border-color .12s;
+      font-weight: 400;
     }
     .toc-link:hover { background: var(--surface); color: var(--text); }
-    .toc-link.active { color: var(--blue); border-left-color: var(--blue); background: var(--tag-bg); }
+    .toc-link.active { color: var(--blue); border-left-color: var(--blue); background: rgba(0,113,227,.07); font-weight: 600; }
 
-    /* ── Main content ── */
+    /* ── Content ── */
     .content { flex: 1; min-width: 0; }
 
-    .section {
-      margin-bottom: 48px;
-      scroll-margin-top: 72px;
-    }
+    .section { margin-bottom: 56px; scroll-margin-top: 72px; }
 
     .section-title {
-      font-size: 26px;
-      font-weight: 700;
-      letter-spacing: -.4px;
-      margin-bottom: 16px;
-      padding-bottom: 12px;
+      font-size: 28px; font-weight: 800; letter-spacing: -.6px;
+      margin-bottom: 18px; padding-bottom: 14px;
       border-bottom: 1px solid var(--border);
     }
-
     .section-sub {
-      font-size: 18px;
-      font-weight: 600;
-      letter-spacing: -.2px;
-      margin-bottom: 12px;
-      margin-top: 28px;
+      font-size: 19px; font-weight: 700; letter-spacing: -.3px;
+      margin-bottom: 14px; margin-top: 32px;
     }
 
-    p { font-size: 15px; line-height: 1.65; color: var(--text); margin-bottom: 12px; }
+    p { font-size: 15px; line-height: 1.68; color: var(--text); margin-bottom: 14px; }
     p a { color: var(--blue); text-decoration: none; }
     p a:hover { text-decoration: underline; }
 
     /* ── Method badge ── */
     .method {
-      display: inline-block;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 6px;
-      letter-spacing: .4px;
-      margin-right: 6px;
-      vertical-align: middle;
+      display: inline-flex; align-items: center;
+      font-size: 10.5px; font-weight: 700; letter-spacing: .5px;
+      padding: 4px 9px; border-radius: 7px; flex-shrink: 0;
     }
-    .method.get  { background: rgba(52,199,89,.15);  color: #1a7a35; }
-    .method.post { background: rgba(0,122,255,.12);  color: var(--blue); }
+    .method.get  { background: rgba(52,199,89,.12);  color: #1a7a35; }
+    .method.post { background: rgba(0,113,227,.1);   color: var(--blue); }
+    html.dark .method.get  { color: #34C759; }
+    html.dark .method.post { color: #5BB8FF; }
 
-    /* ── Endpoint card ── */
+    /* ── Endpoint cards ── */
     .endpoint-card {
       background: var(--surface);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow-card);
-      margin-bottom: 16px;
-      overflow: hidden;
-      scroll-margin-top: 80px;
+      border-radius: 18px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.05), 0 0 0 1px var(--border);
+      margin-bottom: 14px; overflow: hidden; scroll-margin-top: 80px;
+      opacity: 0; transform: translateY(18px);
+      transition: opacity .5s cubic-bezier(.22,1,.36,1), transform .5s cubic-bezier(.22,1,.36,1);
     }
+    .endpoint-card.vis { opacity: 1; transform: none; }
     .endpoint-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 14px 20px;
-    }
-    .endpoint-path {
-      font-size: 15px;
-      font-weight: 600;
-      font-family: "SF Mono", "Fira Code", monospace;
-      flex: 1;
-    }
-    .endpoint-desc {
-      font-size: 13px;
-      color: var(--subtext);
-    }
-    .caret {
-      font-size: 12px;
-      color: var(--subtext);
-      transition: transform .2s;
-    }
-    .endpoint-card.open .caret { transform: rotate(180deg); }
-    .endpoint-body {
-      display: none;
-      padding: 0 20px 20px;
-      border-top: 1px solid var(--border);
-    }
-    .endpoint-card.open .endpoint-body { display: block; }
-    .endpoint-note {
-      font-size: 14px;
-      color: var(--subtext);
-      line-height: 1.6;
-      padding: 12px 0;
-    }
-
-    /* ── Params table ── */
-    .param-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 14px;
-      margin-top: 8px;
-    }
-    .param-table th {
-      text-align: left;
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: .5px;
-      color: var(--subtext);
-      padding: 8px 12px;
-      border-bottom: 1px solid var(--border);
-    }
-    .param-table td {
-      padding: 10px 12px;
-      vertical-align: top;
-      border-bottom: 1px solid rgba(0,0,0,.04);
-    }
-    .param-table tr:last-child td { border-bottom: none; }
-    .param-table tr:hover td { background: var(--bg); }
-    .p-name {
-      font-family: "SF Mono", "Fira Code", monospace;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text);
-    }
-    .p-type {
-      font-size: 11px;
-      font-weight: 500;
-      padding: 2px 7px;
-      border-radius: 5px;
-      background: var(--bg);
-      color: var(--subtext);
-      white-space: nowrap;
-    }
-    .p-req {
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--red);
-    }
-    .p-opt {
-      font-size: 11px;
-      color: var(--subtext);
-    }
-    .p-desc { color: var(--subtext); line-height: 1.5; }
-    .p-default {
-      font-family: "SF Mono", "Fira Code", monospace;
-      font-size: 12px;
-      background: var(--tag-bg);
-      color: var(--tag-text);
-      padding: 2px 6px;
-      border-radius: 4px;
-    }
-
-    /* ── Code block ── */
-    .code-tabs {
-      margin-top: 8px;
-    }
-    .tab-row {
-      display: flex;
-      gap: 2px;
-      margin-bottom: -1px;
-    }
-    .tab-btn {
-      font-size: 12px;
-      font-weight: 500;
-      padding: 6px 14px;
-      border: 1px solid var(--border);
-      border-bottom: none;
-      border-radius: 8px 8px 0 0;
-      background: var(--bg);
-      color: var(--subtext);
-      cursor: pointer;
-      font-family: inherit;
-      transition: background .12s, color .12s;
-    }
-    .tab-btn.active { background: #1C1C1E; color: #fff; border-color: #1C1C1E; }
-    .code-block {
-      background: #1C1C1E;
-      border-radius: 0 var(--radius-sm) var(--radius-sm) var(--radius-sm);
-      padding: 18px 20px;
-      font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
-      font-size: 13px;
-      line-height: 1.7;
-      color: #E8E8E8;
-      overflow-x: auto;
-      white-space: pre;
-      border: 1px solid #333;
-      position: relative;
-    }
-    .code-block .kw  { color: #FC9B5B; }
-    .code-block .str { color: #99D682; }
-    .code-block .cm  { color: #7A7A8C; }
-    .code-block .num { color: #79C0FF; }
-    .copy-btn {
-      position: absolute;
-      top: 10px; right: 12px;
-      font-size: 11px;
-      font-weight: 500;
-      padding: 4px 10px;
-      border-radius: 6px;
-      border: 1px solid #444;
-      background: #2C2C2E;
-      color: #AAA;
-      cursor: pointer;
-      font-family: inherit;
+      display: flex; align-items: center; gap: 12px; padding: 16px 22px;
+      cursor: pointer; user-select: none;
       transition: background .12s;
     }
-    .copy-btn:hover { background: #3A3A3C; color: #fff; }
+    .endpoint-header:hover { background: rgba(0,0,0,.02); }
+    html.dark .endpoint-header:hover { background: rgba(255,255,255,.03); }
+    .endpoint-path { font-size: 15px; font-weight: 600; font-family: var(--mono); flex: 1; }
+    .endpoint-desc { font-size: 13px; color: var(--sub); }
+    .ep-caret {
+      font-size: 10px; color: var(--sub);
+      transition: transform .22s cubic-bezier(.34,1.56,.64,1);
+    }
+    .endpoint-card.open .ep-caret { transform: rotate(180deg); }
+    .endpoint-body {
+      max-height: 0; overflow: hidden;
+      transition: max-height .4s cubic-bezier(.22,1,.36,1);
+      border-top: 1px solid transparent;
+    }
+    .endpoint-card.open .endpoint-body {
+      max-height: 4000px;
+      border-top-color: var(--border);
+    }
+    .endpoint-body-inner { padding: 0 22px 22px; }
+    .endpoint-note { font-size: 14px; color: var(--sub); line-height: 1.65; padding: 14px 0; }
 
-    /* ── Response schema ── */
+    /* ── Params table ── */
+    .param-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 6px; }
+    .param-table th {
+      text-align: left; font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .6px; color: var(--sub); padding: 8px 12px; border-bottom: 1px solid var(--border);
+    }
+    .param-table td { padding: 10px 12px; vertical-align: top; border-bottom: 1px solid rgba(0,0,0,.04); }
+    html.dark .param-table td { border-bottom-color: rgba(255,255,255,.04); }
+    .param-table tr:last-child td { border-bottom: none; }
+    .param-table tr:hover td { background: rgba(0,0,0,.015); }
+    html.dark .param-table tr:hover td { background: rgba(255,255,255,.025); }
+    .p-name { font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--text); }
+    .p-type { font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 5px; background: var(--bg); color: var(--sub); white-space: nowrap; }
+    .p-opt  { font-size: 11px; color: var(--sub); }
+    .p-req  { font-size: 11px; font-weight: 600; color: var(--red); }
+    .p-desc { color: var(--sub); line-height: 1.55; }
+    .p-def  { font-family: var(--mono); font-size: 12px; background: rgba(0,113,227,.08); color: var(--blue); padding: 2px 6px; border-radius: 4px; }
+
+    /* ── Code tabs ── */
+    .code-tabs { margin-top: 10px; }
+    .tab-row { display: flex; gap: 2px; margin-bottom: -1px; }
+    .tab-btn {
+      font-size: 12px; font-weight: 500; padding: 6px 14px;
+      border: 1px solid var(--border); border-bottom: none;
+      border-radius: 8px 8px 0 0; background: var(--bg); color: var(--sub);
+      cursor: pointer; font-family: var(--font); transition: background .12s, color .12s;
+    }
+    .tab-btn.active { background: #111; color: #fff; border-color: #111; }
+    html.dark .tab-btn.active { background: #E0E0E0; color: #111; border-color: #E0E0E0; }
+
+    .code-block {
+      background: #111; border-radius: 0 var(--rs) var(--rs) var(--rs);
+      padding: 18px 20px; font-family: var(--mono); font-size: 13px;
+      line-height: 1.72; color: #D8D8D8; overflow-x: auto; white-space: pre;
+      border: 1px solid rgba(255,255,255,.07); position: relative;
+    }
+    html.dark .code-block { background: #0D0D0D; }
+    .code-block .kw  { color: #FFA966; }
+    .code-block .str { color: #9ECA7F; }
+    .code-block .cm  { color: #636375; }
+    .code-block .num { color: #79C0FF; }
+    .copy-btn {
+      position: absolute; top: 10px; right: 12px;
+      font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 6px;
+      border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.07); color: #999;
+      cursor: pointer; font-family: var(--font); transition: background .12s, color .12s;
+    }
+    .copy-btn:hover { background: rgba(255,255,255,.14); color: #fff; }
+
+    /* ── Schema box ── */
     .schema-box {
-      background: var(--surface);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow-card);
+      background: var(--surface); border-radius: 18px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.05), 0 0 0 1px var(--border);
       padding: 20px 24px;
     }
     .schema-field {
-      display: grid;
-      grid-template-columns: 180px 80px 1fr;
-      gap: 8px 16px;
-      align-items: start;
-      padding: 8px 0;
-      border-bottom: 1px solid rgba(0,0,0,.04);
+      display: grid; grid-template-columns: 180px 80px 1fr;
+      gap: 8px 16px; align-items: start;
+      padding: 9px 0; border-bottom: 1px solid rgba(0,0,0,.04);
       font-size: 14px;
     }
+    html.dark .schema-field { border-bottom-color: rgba(255,255,255,.04); }
     .schema-field:last-child { border-bottom: none; }
-    .sf-name {
-      font-family: "SF Mono", "Fira Code", monospace;
-      font-size: 13px;
-      font-weight: 600;
-    }
-    .sf-type {
-      font-size: 12px;
-      background: var(--bg);
-      color: var(--subtext);
-      padding: 2px 8px;
-      border-radius: 5px;
-      text-align: center;
-      font-weight: 500;
-      align-self: center;
-    }
-    .sf-desc { color: var(--subtext); line-height: 1.5; }
+    .sf-name { font-family: var(--mono); font-size: 13px; font-weight: 500; }
+    .sf-type { font-size: 12px; background: var(--bg); color: var(--sub); padding: 2px 8px; border-radius: 5px; text-align: center; font-weight: 500; align-self: center; }
+    .sf-desc { color: var(--sub); line-height: 1.55; }
 
-    /* ── Info callout ── */
+    /* ── Callout ── */
     .callout {
-      display: flex;
-      gap: 12px;
-      padding: 14px 18px;
-      border-radius: var(--radius-sm);
-      font-size: 14px;
-      line-height: 1.6;
-      margin-bottom: 16px;
+      display: flex; gap: 12px; padding: 14px 18px; border-radius: var(--rs);
+      font-size: 14px; line-height: 1.65; margin-bottom: 16px;
     }
-    .callout.info  { background: var(--tag-bg); border-left: 3px solid var(--blue); color: #004499; }
-    .callout.warn  { background: rgba(255,149,0,.1); border-left: 3px solid var(--orange); color: #7a4800; }
-    .callout-icon  { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+    .callout.info  { background: rgba(0,113,227,.07); border-left: 3px solid var(--blue); color: var(--text); }
+    .callout.warn  { background: rgba(255,149,0,.08); border-left: 3px solid var(--orange); color: var(--text); }
+    .callout a { color: var(--blue); text-decoration: none; }
+    .callout a:hover { text-decoration: underline; }
+    .callout-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
 
     /* ── Inline code ── */
     code {
-      font-family: "SF Mono", "Fira Code", monospace;
-      font-size: 12.5px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      padding: 1px 6px;
-      border-radius: 5px;
-      color: var(--text);
+      font-family: var(--mono); font-size: 12.5px;
+      background: rgba(0,0,0,.06); border: 1px solid rgba(0,0,0,.08);
+      padding: 1px 6px; border-radius: 5px; color: var(--text);
     }
+    html.dark code { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.1); }
 
-    /* ── Base URL pill ── */
-    .base-url {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: #1C1C1E;
-      color: #E8E8E8;
-      font-family: "SF Mono", "Fira Code", monospace;
-      font-size: 14px;
-      padding: 10px 18px;
-      border-radius: var(--radius-sm);
-      margin-bottom: 16px;
+    /* ── Base URL chip ── */
+    .base-url-chip {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: #111; color: #9ECA7F; font-family: var(--mono);
+      font-size: 14px; padding: 11px 20px; border-radius: 12px; margin-bottom: 16px;
     }
-    .base-url .env { color: #FC9B5B; }
+    html.dark .base-url-chip { background: #0D0D0D; }
+
+    /* Reveal */
+    .reveal { opacity: 0; transform: translateY(18px); transition: opacity .55s cubic-bezier(.22,1,.36,1), transform .55s cubic-bezier(.22,1,.36,1); }
+    .reveal.vis { opacity: 1; transform: none; }
 
     @media (max-width: 800px) {
       .sidebar { display: none; }
-      .page-wrap { padding: 24px 16px 60px; }
+      .page-wrap { padding: 28px 16px 64px; }
     }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(128,128,128,.25); border-radius: 10px; }
   </style>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <script>if(localStorage.getItem('theme')==='dark')document.documentElement.classList.add('dark');</script>
 </head>
 <body>
 
 <nav>
-  <a class="nav-logo" href="/">Job <span>API</span></a>
+  <a class="nav-logo" href="/">
+    <div class="nav-logo-mark">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <circle cx="5.5" cy="5.5" r="3.8" stroke="white" stroke-width="1.6"/>
+        <path d="M8.5 8.5L12.5 12.5" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+    </div>
+    Job API
+  </a>
   <div class="nav-links">
     <a href="/" class="nav-link">Search</a>
     <a href="/docs.html" class="nav-link active">Docs</a>
     <a href="/playground.html" class="nav-link">Playground</a>
   </div>
-  <button class="dark-toggle" id="darkToggle" title="Toggle dark mode"><i class="fa-solid fa-moon"></i></button>
+  <button class="dark-toggle" id="darkToggle" title="Toggle theme">
+    <svg id="iconMoon" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 9.5A6.5 6.5 0 017.5 3a6.5 6.5 0 100 13A6.5 6.5 0 0014 9.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+    <svg id="iconSun" width="16" height="16" viewBox="0 0 16 16" fill="none" style="display:none"><circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5v1M8 13.5v1M1.5 8h1M13.5 8h1M3.4 3.4l.7.7M11.9 11.9l.7.7M3.4 12.6l.7-.7M11.9 4.1l.7-.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+  </button>
 </nav>
 
 <div class="page-wrap">
@@ -445,48 +309,42 @@
   <!-- Sidebar -->
   <aside class="sidebar">
     <div class="sidebar-inner">
-      <div class="toc-section">
-        <div class="toc-label">Getting Started</div>
-        <a href="#overview"    class="toc-link">Overview</a>
-        <a href="#quickstart"  class="toc-link">Quick Start</a>
-        <a href="#base-url"    class="toc-link">Base URL</a>
+      <div class="toc-group">
+        <div class="toc-group-label">Getting Started</div>
+        <a href="#overview"   class="toc-link">Overview</a>
+        <a href="#quickstart" class="toc-link">Quick Start</a>
+        <a href="#base-url"   class="toc-link">Base URL</a>
       </div>
-      <div class="toc-section">
-        <div class="toc-label">Endpoints</div>
-        <a href="#card-get-jobs"  class="toc-link">GET /api/jobs</a>
-        <a href="#card-post-jobs" class="toc-link">POST /api/jobs</a>
-        <a href="#card-health"    class="toc-link">GET /api/health</a>
+      <div class="toc-group">
+        <div class="toc-group-label">Endpoints</div>
+        <a href="#ep-get"    class="toc-link">GET /api/jobs</a>
+        <a href="#ep-post"   class="toc-link">POST /api/jobs</a>
+        <a href="#ep-health" class="toc-link">GET /api/health</a>
       </div>
-      <div class="toc-section">
-        <div class="toc-label">Reference</div>
-        <a href="#response"    class="toc-link">Response Schema</a>
-        <a href="#examples"    class="toc-link">Code Examples</a>
+      <div class="toc-group">
+        <div class="toc-group-label">Reference</div>
+        <a href="#response" class="toc-link">Response Schema</a>
+        <a href="#examples" class="toc-link">Code Examples</a>
       </div>
     </div>
   </aside>
 
-  <!-- Main content -->
+  <!-- Content -->
   <main class="content">
 
     <!-- Overview -->
-    <section class="section" id="overview">
+    <section class="section reveal" id="overview">
       <h2 class="section-title">Overview</h2>
-      <p>
-        Job API is a REST service that aggregates job postings from multiple boards in a single
-        request. It wraps <a href="https://github.com/Bunsly/JobSpy" target="_blank">python-jobspy</a>
-        and exposes it as a clean JSON API deployable on Vercel.
-      </p>
-      <p>Supported job boards: <code>indeed</code>, <code>linkedin</code>, <code>glassdoor</code>,
-        <code>zip_recruiter</code>, <code>google</code>, <code>bayt</code>, <code>naukri</code>, <code>bdjobs</code>.
-      </p>
+      <p>Job API is a REST service that aggregates job postings from multiple boards in a single request. It wraps <a href="https://github.com/Bunsly/JobSpy" target="_blank">python-jobspy</a> and exposes it as a clean JSON API deployable on Vercel.</p>
+      <p>Supported job boards: <code>indeed</code>, <code>linkedin</code>, <code>glassdoor</code>, <code>zip_recruiter</code>, <code>google</code>, <code>bayt</code>, <code>naukri</code>, <code>bdjobs</code>.</p>
       <div class="callout info">
-        <span class="callout-icon">ℹ️</span>
-        <span>Want to test the API interactively? Use the <a href="/playground.html">Playground</a> — it's a built-in API client that lets you send requests and inspect responses.</span>
+        <span class="callout-icon">&#8505;&#65039;</span>
+        <span>Want to test the API interactively? Use the <a href="/playground.html">Playground</a> — a built-in API client that lets you send requests and inspect responses in real time.</span>
       </div>
     </section>
 
     <!-- Quick Start -->
-    <section class="section" id="quickstart">
+    <section class="section reveal" id="quickstart">
       <h2 class="section-title">Quick Start</h2>
       <p>The simplest possible request — search for software engineer jobs on Indeed:</p>
       <div class="code-tabs">
@@ -502,11 +360,11 @@ curl <span class="str">"https://j0b-api.vercel.app/api/jobs?search_term=software
 resp = requests.get(
     <span class="str">"https://j0b-api.vercel.app/api/jobs"</span>,
     params={
-        <span class="str">"search_term"</span>:    <span class="str">"software engineer"</span>,
-        <span class="str">"location"</span>:        <span class="str">"New York, NY"</span>,
-        <span class="str">"site_name"</span>:       <span class="str">"indeed,linkedin"</span>,
-        <span class="str">"results_wanted"</span>:  <span class="num">15</span>,
-        <span class="str">"hours_old"</span>:       <span class="num">72</span>,
+        <span class="str">"search_term"</span>:   <span class="str">"software engineer"</span>,
+        <span class="str">"location"</span>:       <span class="str">"New York, NY"</span>,
+        <span class="str">"site_name"</span>:      <span class="str">"indeed,linkedin"</span>,
+        <span class="str">"results_wanted"</span>: <span class="num">15</span>,
+        <span class="str">"hours_old"</span>:      <span class="num">72</span>,
     }
 )
 data = resp.json()
@@ -514,9 +372,9 @@ data = resp.json()
 <span class="kw">for</span> job <span class="kw">in</span> data[<span class="str">"jobs"</span>]:
     <span class="kw">print</span>(job[<span class="str">"title"</span>], <span class="str">"@"</span>, job[<span class="str">"company"</span>])</div>
         <div class="code-block" id="qs-js" style="display:none"><button class="copy-btn" onclick="copyCode(this)">Copy</button><span class="kw">const</span> params = <span class="kw">new</span> URLSearchParams({
-  search_term:   <span class="str">"software engineer"</span>,
-  location:      <span class="str">"New York, NY"</span>,
-  site_name:     <span class="str">"indeed,linkedin"</span>,
+  search_term:    <span class="str">"software engineer"</span>,
+  location:       <span class="str">"New York, NY"</span>,
+  site_name:      <span class="str">"indeed,linkedin"</span>,
   results_wanted: <span class="num">15</span>,
   hours_old:      <span class="num">72</span>,
 });
@@ -530,66 +388,68 @@ data.jobs.forEach(j => console.log(j.title, <span class="str">"@"</span>, j.comp
     </section>
 
     <!-- Base URL -->
-    <section class="section" id="base-url">
+    <section class="section reveal" id="base-url">
       <h2 class="section-title">Base URL</h2>
-      <div class="base-url">https://j0b-api.vercel.app</div>
+      <div class="base-url-chip">https://j0b-api.vercel.app</div>
       <p>All endpoints are relative to the base URL. In local development the default is <code>http://localhost:8000</code>.</p>
     </section>
 
     <!-- Endpoints -->
     <section class="section" id="ep-jobs">
-      <h2 class="section-title">Endpoints</h2>
+      <h2 class="section-title reveal">Endpoints</h2>
 
-      <!-- GET /api/jobs -->
-      <div class="endpoint-card open" id="card-get-jobs">
-        <div class="endpoint-header">
+      <!-- GET -->
+      <div class="endpoint-card open vis" id="ep-get">
+        <div class="endpoint-header" onclick="toggleEP(this)">
           <span class="method get">GET</span>
           <span class="endpoint-path">/api/jobs</span>
           <span class="endpoint-desc">Scrape jobs via query string</span>
+          <span class="ep-caret">&#9660;</span>
         </div>
         <div class="endpoint-body">
-          <p class="endpoint-note">Pass all parameters as URL query parameters. Ideal for browser fetches and simple integrations.</p>
-          <table class="param-table">
-            <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr>
-            <tr><td class="p-name">search_term</td><td><span class="p-type">string</span></td><td class="p-opt">optional</td><td>—</td><td class="p-desc">Keyword query. Supports <code>-negative</code> and <code>"exact phrase"</code>.</td></tr>
-            <tr><td class="p-name">site_name</td><td><span class="p-type">string</span></td><td class="p-opt">optional</td><td><span class="p-default">all</span></td><td class="p-desc">Comma-separated boards: <code>indeed</code>, <code>linkedin</code>, <code>glassdoor</code>, <code>zip_recruiter</code>, <code>google</code>, <code>bayt</code>, <code>naukri</code>, <code>bdjobs</code>.</td></tr>
-            <tr><td class="p-name">location</td><td><span class="p-type">string</span></td><td class="p-opt">optional</td><td>—</td><td class="p-desc">City, state, country, or any location string.</td></tr>
-            <tr><td class="p-name">country_indeed</td><td><span class="p-type">string</span></td><td class="p-opt">optional</td><td><span class="p-default">USA</span></td><td class="p-desc">Country filter for Indeed and Glassdoor. E.g. <code>UK</code>, <code>Canada</code>, <code>Germany</code>.</td></tr>
-            <tr><td class="p-name">results_wanted</td><td><span class="p-type">integer</span></td><td class="p-opt">optional</td><td><span class="p-default">15</span></td><td class="p-desc">Number of results to return per site (max ~1000).</td></tr>
-            <tr><td class="p-name">hours_old</td><td><span class="p-type">integer</span></td><td class="p-opt">optional</td><td>—</td><td class="p-desc">Only return jobs posted within the last N hours.</td></tr>
-            <tr><td class="p-name">job_type</td><td><span class="p-type">string</span></td><td class="p-opt">optional</td><td>—</td><td class="p-desc"><code>fulltime</code> | <code>parttime</code> | <code>internship</code> | <code>contract</code></td></tr>
-            <tr><td class="p-name">is_remote</td><td><span class="p-type">boolean</span></td><td class="p-opt">optional</td><td>—</td><td class="p-desc">Filter for remote listings only.</td></tr>
-            <tr><td class="p-name">distance</td><td><span class="p-type">integer</span></td><td class="p-opt">optional</td><td><span class="p-default">50</span></td><td class="p-desc">Search radius in miles.</td></tr>
-            <tr><td class="p-name">offset</td><td><span class="p-type">integer</span></td><td class="p-opt">optional</td><td><span class="p-default">0</span></td><td class="p-desc">Skip the first N results (for pagination).</td></tr>
-            <tr><td class="p-name">description_format</td><td><span class="p-type">string</span></td><td class="p-opt">optional</td><td><span class="p-default">markdown</span></td><td class="p-desc"><code>markdown</code> | <code>html</code> — format for job description text.</td></tr>
-            <tr><td class="p-name">easy_apply</td><td><span class="p-type">boolean</span></td><td class="p-opt">optional</td><td>—</td><td class="p-desc">Return only jobs with in-board quick apply.</td></tr>
-            <tr><td class="p-name">linkedin_fetch_description</td><td><span class="p-type">boolean</span></td><td class="p-opt">optional</td><td><span class="p-default">false</span></td><td class="p-desc">Fetch full LinkedIn descriptions (significantly slower).</td></tr>
-            <tr><td class="p-name">linkedin_company_ids</td><td><span class="p-type">string</span></td><td class="p-opt">optional</td><td>—</td><td class="p-desc">Comma-separated LinkedIn company IDs to filter by, e.g. <code>1441,2382</code>.</td></tr>
-            <tr><td class="p-name">enforce_annual_salary</td><td><span class="p-type">boolean</span></td><td class="p-opt">optional</td><td><span class="p-default">false</span></td><td class="p-desc">Normalise all salary figures to annual amounts.</td></tr>
-            <tr><td class="p-name">google_search_term</td><td><span class="p-type">string</span></td><td class="p-opt">optional</td><td>—</td><td class="p-desc">Override for Google Jobs only — paste the exact query from google.com/search.</td></tr>
-            <tr><td class="p-name">proxies</td><td><span class="p-type">string</span></td><td class="p-opt">optional</td><td>—</td><td class="p-desc">Comma-separated proxy list <code>user:pass@host:port</code>.</td></tr>
-          </table>
+          <div class="endpoint-body-inner">
+            <p class="endpoint-note">Pass all parameters as URL query parameters. Ideal for browser fetches and simple integrations.</p>
+            <table class="param-table">
+              <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr>
+              <tr><td class="p-name">search_term</td><td><span class="p-type">string</span></td><td class="p-opt">optional</td><td>—</td><td class="p-desc">Keyword query. Supports <code>-negative</code> and <code>"exact phrase"</code>.</td></tr>
+              <tr><td class="p-name">site_name</td><td><span class="p-type">string</span></td><td class="p-opt">optional</td><td><span class="p-def">all</span></td><td class="p-desc">Comma-separated boards: <code>indeed</code>, <code>linkedin</code>, <code>glassdoor</code>, <code>zip_recruiter</code>, <code>google</code>, <code>bayt</code>, <code>naukri</code>, <code>bdjobs</code>.</td></tr>
+              <tr><td class="p-name">location</td><td><span class="p-type">string</span></td><td class="p-opt">optional</td><td>—</td><td class="p-desc">City, state, country, or any location string.</td></tr>
+              <tr><td class="p-name">country_indeed</td><td><span class="p-type">string</span></td><td class="p-opt">optional</td><td><span class="p-def">USA</span></td><td class="p-desc">Country filter for Indeed and Glassdoor. E.g. <code>UK</code>, <code>Canada</code>.</td></tr>
+              <tr><td class="p-name">results_wanted</td><td><span class="p-type">integer</span></td><td class="p-opt">optional</td><td><span class="p-def">15</span></td><td class="p-desc">Number of results per site (max ~1000).</td></tr>
+              <tr><td class="p-name">hours_old</td><td><span class="p-type">integer</span></td><td class="p-opt">optional</td><td>—</td><td class="p-desc">Only return jobs posted within the last N hours.</td></tr>
+              <tr><td class="p-name">job_type</td><td><span class="p-type">string</span></td><td class="p-opt">optional</td><td>—</td><td class="p-desc"><code>fulltime</code> | <code>parttime</code> | <code>internship</code> | <code>contract</code></td></tr>
+              <tr><td class="p-name">is_remote</td><td><span class="p-type">boolean</span></td><td class="p-opt">optional</td><td>—</td><td class="p-desc">Filter for remote listings only.</td></tr>
+              <tr><td class="p-name">distance</td><td><span class="p-type">integer</span></td><td class="p-opt">optional</td><td><span class="p-def">50</span></td><td class="p-desc">Search radius in miles.</td></tr>
+              <tr><td class="p-name">offset</td><td><span class="p-type">integer</span></td><td class="p-opt">optional</td><td><span class="p-def">0</span></td><td class="p-desc">Skip the first N results (for pagination).</td></tr>
+              <tr><td class="p-name">description_format</td><td><span class="p-type">string</span></td><td class="p-opt">optional</td><td><span class="p-def">markdown</span></td><td class="p-desc"><code>markdown</code> | <code>html</code></td></tr>
+              <tr><td class="p-name">easy_apply</td><td><span class="p-type">boolean</span></td><td class="p-opt">optional</td><td>—</td><td class="p-desc">Return only jobs with in-board quick apply.</td></tr>
+              <tr><td class="p-name">linkedin_fetch_description</td><td><span class="p-type">boolean</span></td><td class="p-opt">optional</td><td><span class="p-def">false</span></td><td class="p-desc">Fetch full LinkedIn descriptions (significantly slower).</td></tr>
+              <tr><td class="p-name">linkedin_company_ids</td><td><span class="p-type">string</span></td><td class="p-opt">optional</td><td>—</td><td class="p-desc">Comma-separated LinkedIn company IDs, e.g. <code>1441,2382</code>.</td></tr>
+              <tr><td class="p-name">enforce_annual_salary</td><td><span class="p-type">boolean</span></td><td class="p-opt">optional</td><td><span class="p-def">false</span></td><td class="p-desc">Normalise all salary figures to annual amounts.</td></tr>
+              <tr><td class="p-name">output_format</td><td><span class="p-type">string</span></td><td class="p-opt">optional</td><td><span class="p-def">json</span></td><td class="p-desc"><code>json</code> | <code>csv</code> | <code>excel</code></td></tr>
+              <tr><td class="p-name">proxies</td><td><span class="p-type">string</span></td><td class="p-opt">optional</td><td>—</td><td class="p-desc">Comma-separated proxy list <code>user:pass@host:port</code>.</td></tr>
+            </table>
+          </div>
         </div>
       </div>
 
-      <!-- POST /api/jobs -->
-      <div class="endpoint-card open" id="card-post-jobs">
-        <div class="endpoint-header">
+      <!-- POST -->
+      <div class="endpoint-card open vis" id="ep-post">
+        <div class="endpoint-header" onclick="toggleEP(this)">
           <span class="method post">POST</span>
           <span class="endpoint-path">/api/jobs</span>
           <span class="endpoint-desc">Scrape jobs via JSON body</span>
+          <span class="ep-caret">&#9660;</span>
         </div>
         <div class="endpoint-body">
-          <p class="endpoint-note">
-            Accepts the same parameters as the GET endpoint but as a JSON body. Query-string params and the JSON body are merged — the body wins on conflict.
-            Array fields like <code>site_name</code> and <code>linkedin_company_ids</code> can be passed as real JSON arrays.
-          </p>
-          <div class="code-tabs" style="margin-top:12px">
-            <div class="tab-row">
-              <button class="tab-btn active" onclick="switchTab(this,'post','curl')">curl</button>
-              <button class="tab-btn" onclick="switchTab(this,'post','python')">Python</button>
-            </div>
-            <div class="code-block" id="post-curl"><button class="copy-btn" onclick="copyCode(this)">Copy</button>curl -X POST <span class="str">"https://j0b-api.vercel.app/api/jobs"</span> \
+          <div class="endpoint-body-inner">
+            <p class="endpoint-note">Accepts the same parameters as the GET endpoint but as a JSON body. Array fields like <code>site_name</code> and <code>linkedin_company_ids</code> can be passed as real JSON arrays.</p>
+            <div class="code-tabs" style="margin-top:12px">
+              <div class="tab-row">
+                <button class="tab-btn active" onclick="switchTab(this,'post','curl')">curl</button>
+                <button class="tab-btn" onclick="switchTab(this,'post','python')">Python</button>
+              </div>
+              <div class="code-block" id="post-curl"><button class="copy-btn" onclick="copyCode(this)">Copy</button>curl -X POST <span class="str">"https://j0b-api.vercel.app/api/jobs"</span> \
   -H <span class="str">"Content-Type: application/json"</span> \
   -d <span class="str">'{
     "site_name": ["indeed", "linkedin"],
@@ -599,7 +459,7 @@ data.jobs.forEach(j => console.log(j.title, <span class="str">"@"</span>, j.comp
     "hours_old": 48,
     "is_remote": true
   }'</span></div>
-            <div class="code-block" id="post-python" style="display:none"><button class="copy-btn" onclick="copyCode(this)">Copy</button><span class="kw">import</span> requests
+              <div class="code-block" id="post-python" style="display:none"><button class="copy-btn" onclick="copyCode(this)">Copy</button><span class="kw">import</span> requests
 
 resp = requests.post(
     <span class="str">"https://j0b-api.vercel.app/api/jobs"</span>,
@@ -612,86 +472,74 @@ resp = requests.post(
         <span class="str">"is_remote"</span>:      <span class="kw">True</span>,
     }
 )
-data = resp.json()
-<span class="kw">print</span>(data[<span class="str">"count"</span>], <span class="str">"jobs found"</span>)</div>
+<span class="kw">print</span>(resp.json()[<span class="str">"count"</span>], <span class="str">"jobs found"</span>)</div>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- GET /api/health -->
-      <div class="endpoint-card open" id="card-health">
-        <div class="endpoint-header">
+      <!-- Health -->
+      <div class="endpoint-card open vis" id="ep-health">
+        <div class="endpoint-header" onclick="toggleEP(this)">
           <span class="method get">GET</span>
           <span class="endpoint-path">/api/health</span>
           <span class="endpoint-desc">Check API status</span>
+          <span class="ep-caret">&#9660;</span>
         </div>
         <div class="endpoint-body">
-          <p class="endpoint-note">Returns a simple status object. Useful for uptime monitoring and deployment checks.</p>
-          <div class="code-block" style="margin-top:12px"><button class="copy-btn" onclick="copyCode(this)">Copy</button><span class="cm"># Response</span>
+          <div class="endpoint-body-inner">
+            <p class="endpoint-note">Returns a simple status object. Useful for uptime monitoring and deployment checks.</p>
+            <div class="code-block" style="margin-top:12px; border-radius:var(--rs)"><button class="copy-btn" onclick="copyCode(this)">Copy</button><span class="cm">// Response</span>
 {
   <span class="str">"status"</span>: <span class="str">"ok"</span>,
-  <span class="str">"service"</span>: <span class="str">"Job API"</span>
+  <span class="str">"service"</span>: <span class="str">"Job API"</span>,
+  <span class="str">"version"</span>: <span class="str">"2.0.0"</span>
 }</div>
+          </div>
         </div>
       </div>
     </section>
 
     <!-- Response Schema -->
-    <section class="section" id="response">
+    <section class="section reveal" id="response">
       <h2 class="section-title">Response Schema</h2>
       <p>All successful job requests return the following top-level structure:</p>
 
       <div class="schema-box" style="margin-bottom:16px">
-        <div class="schema-field" style="font-weight:600; font-size:12px; color:var(--subtext); padding-bottom:6px;">
+        <div class="schema-field" style="font-weight:700;font-size:11px;color:var(--sub);padding-bottom:6px;">
           <span>Field</span><span>Type</span><span>Description</span>
         </div>
-        <div class="schema-field">
-          <span class="sf-name">jobs</span>
-          <span class="sf-type">array</span>
-          <span class="sf-desc">Array of job posting objects (see below).</span>
-        </div>
-        <div class="schema-field">
-          <span class="sf-name">count</span>
-          <span class="sf-type">integer</span>
-          <span class="sf-desc">Total number of jobs returned.</span>
-        </div>
-        <div class="schema-field">
-          <span class="sf-name">sites</span>
-          <span class="sf-type">array</span>
-          <span class="sf-desc">The job boards that were queried.</span>
-        </div>
-        <div class="schema-field">
-          <span class="sf-name">query</span>
-          <span class="sf-type">object</span>
-          <span class="sf-desc">Echo of the parameters used for the request.</span>
-        </div>
+        <div class="schema-field"><span class="sf-name">jobs</span><span class="sf-type">array</span><span class="sf-desc">Array of job posting objects.</span></div>
+        <div class="schema-field"><span class="sf-name">count</span><span class="sf-type">integer</span><span class="sf-desc">Total number of jobs returned.</span></div>
+        <div class="schema-field"><span class="sf-name">sites</span><span class="sf-type">array</span><span class="sf-desc">The job boards that were queried.</span></div>
+        <div class="schema-field"><span class="sf-name">query</span><span class="sf-type">object</span><span class="sf-desc">Echo of the parameters used for the request.</span></div>
       </div>
 
       <h3 class="section-sub">Job Object</h3>
       <div class="schema-box">
-        <div class="schema-field" style="font-weight:600; font-size:12px; color:var(--subtext); padding-bottom:6px;">
+        <div class="schema-field" style="font-weight:700;font-size:11px;color:var(--sub);padding-bottom:6px;">
           <span>Field</span><span>Type</span><span>Description</span>
         </div>
         <div class="schema-field"><span class="sf-name">title</span><span class="sf-type">string</span><span class="sf-desc">Job title.</span></div>
         <div class="schema-field"><span class="sf-name">company</span><span class="sf-type">string</span><span class="sf-desc">Employer name.</span></div>
-        <div class="schema-field"><span class="sf-name">site</span><span class="sf-type">string</span><span class="sf-desc">Source board (e.g. <code>indeed</code>).</span></div>
+        <div class="schema-field"><span class="sf-name">site</span><span class="sf-type">string</span><span class="sf-desc">Source board, e.g. <code>indeed</code>.</span></div>
         <div class="schema-field"><span class="sf-name">job_url</span><span class="sf-type">string</span><span class="sf-desc">Direct link to the job posting.</span></div>
-        <div class="schema-field"><span class="sf-name">location</span><span class="sf-type">object</span><span class="sf-desc"><code>{ city, state, country }</code></span></div>
+        <div class="schema-field"><span class="sf-name">location</span><span class="sf-type">object</span><span class="sf-desc"><code>&#123; city, state, country &#125;</code></span></div>
         <div class="schema-field"><span class="sf-name">is_remote</span><span class="sf-type">boolean</span><span class="sf-desc">Whether the role is remote.</span></div>
         <div class="schema-field"><span class="sf-name">job_type</span><span class="sf-type">string</span><span class="sf-desc"><code>fulltime</code>, <code>parttime</code>, <code>contract</code>, or <code>internship</code>.</span></div>
         <div class="schema-field"><span class="sf-name">job_level</span><span class="sf-type">string</span><span class="sf-desc">Seniority level (where available).</span></div>
         <div class="schema-field"><span class="sf-name">date_posted</span><span class="sf-type">string</span><span class="sf-desc">ISO-8601 date, e.g. <code>2025-01-15</code>.</span></div>
-        <div class="schema-field"><span class="sf-name">salary</span><span class="sf-type">object</span><span class="sf-desc"><code>{ min_amount, max_amount, interval, currency, salary_source }</code></span></div>
+        <div class="schema-field"><span class="sf-name">salary</span><span class="sf-type">object</span><span class="sf-desc"><code>&#123; min_amount, max_amount, interval, currency &#125;</code></span></div>
         <div class="schema-field"><span class="sf-name">description</span><span class="sf-type">string</span><span class="sf-desc">Full job description in the requested format.</span></div>
         <div class="schema-field"><span class="sf-name">emails</span><span class="sf-type">array</span><span class="sf-desc">Contact emails found in the posting.</span></div>
-        <div class="schema-field"><span class="sf-name">skills</span><span class="sf-type">array</span><span class="sf-desc">Skills extracted from the description (where available).</span></div>
-        <div class="schema-field"><span class="sf-name">company_url</span><span class="sf-type">string</span><span class="sf-desc">URL to the company's profile page.</span></div>
+        <div class="schema-field"><span class="sf-name">skills</span><span class="sf-type">array</span><span class="sf-desc">Skills extracted from the description.</span></div>
+        <div class="schema-field"><span class="sf-name">company_url</span><span class="sf-type">string</span><span class="sf-desc">URL to the company profile page.</span></div>
         <div class="schema-field"><span class="sf-name">company_industry</span><span class="sf-type">string</span><span class="sf-desc">Industry category.</span></div>
       </div>
     </section>
 
     <!-- Code Examples -->
-    <section class="section" id="examples">
+    <section class="section reveal" id="examples">
       <h2 class="section-title">Code Examples</h2>
 
       <h3 class="section-sub">Remote jobs posted in the last 24h</h3>
@@ -702,27 +550,20 @@ data = resp.json()
           <button class="tab-btn" onclick="switchTab(this,'ex1','js')">JavaScript</button>
         </div>
         <div class="code-block" id="ex1-curl"><button class="copy-btn" onclick="copyCode(this)">Copy</button>curl <span class="str">"https://j0b-api.vercel.app/api/jobs?search_term=product+manager&is_remote=true&hours_old=24&results_wanted=25&site_name=linkedin,indeed"</span></div>
-        <div class="code-block" id="ex1-python" style="display:none"><button class="copy-btn" onclick="copyCode(this)">Copy</button><span class="kw">import</span> requests
-
-jobs = requests.get(<span class="str">"https://j0b-api.vercel.app/api/jobs"</span>, params={
-    <span class="str">"search_term"</span>:   <span class="str">"product manager"</span>,
-    <span class="str">"is_remote"</span>:     <span class="str">"true"</span>,
-    <span class="str">"hours_old"</span>:     <span class="num">24</span>,
-    <span class="str">"results_wanted"</span>:<span class="num">25</span>,
-    <span class="str">"site_name"</span>:     <span class="str">"linkedin,indeed"</span>,
-}).json()[<span class="str">"jobs"</span>]
-
-<span class="kw">for</span> j <span class="kw">in</span> jobs:
-    <span class="kw">print</span>(j[<span class="str">"title"</span>], j.get(<span class="str">"company"</span>))</div>
+        <div class="code-block" id="ex1-python" style="display:none"><button class="copy-btn" onclick="copyCode(this)">Copy</button>jobs = requests.get(<span class="str">"https://j0b-api.vercel.app/api/jobs"</span>, params={
+    <span class="str">"search_term"</span>:    <span class="str">"product manager"</span>,
+    <span class="str">"is_remote"</span>:      <span class="str">"true"</span>,
+    <span class="str">"hours_old"</span>:      <span class="num">24</span>,
+    <span class="str">"results_wanted"</span>: <span class="num">25</span>,
+    <span class="str">"site_name"</span>:      <span class="str">"linkedin,indeed"</span>,
+}).json()[<span class="str">"jobs"</span>]</div>
         <div class="code-block" id="ex1-js" style="display:none"><button class="copy-btn" onclick="copyCode(this)">Copy</button><span class="kw">const</span> { jobs } = <span class="kw">await</span> fetch(<span class="str">"/api/jobs?"</span> + <span class="kw">new</span> URLSearchParams({
   search_term:    <span class="str">"product manager"</span>,
   is_remote:      <span class="str">"true"</span>,
   hours_old:      <span class="num">24</span>,
   results_wanted: <span class="num">25</span>,
   site_name:      <span class="str">"linkedin,indeed"</span>,
-})).then(r => r.json());
-
-jobs.forEach(j => console.log(j.title, j.company));</div>
+})).then(r => r.json());</div>
       </div>
 
       <h3 class="section-sub">Filter by specific LinkedIn companies</h3>
@@ -733,12 +574,7 @@ jobs.forEach(j => console.log(j.title, j.company));</div>
         </div>
         <div class="code-block" id="ex2-curl"><button class="copy-btn" onclick="copyCode(this)">Copy</button>curl -X POST <span class="str">"https://j0b-api.vercel.app/api/jobs"</span> \
   -H <span class="str">"Content-Type: application/json"</span> \
-  -d <span class="str">'{
-    "site_name": ["linkedin"],
-    "search_term": "engineer",
-    "linkedin_company_ids": [1441, 1035],
-    "results_wanted": 50
-  }'</span></div>
+  -d <span class="str">'{"site_name":["linkedin"],"search_term":"engineer","linkedin_company_ids":[1441,1035],"results_wanted":50}'</span></div>
         <div class="code-block" id="ex2-python" style="display:none"><button class="copy-btn" onclick="copyCode(this)">Copy</button>requests.post(<span class="str">"https://j0b-api.vercel.app/api/jobs"</span>, json={
     <span class="str">"site_name"</span>:           [<span class="str">"linkedin"</span>],
     <span class="str">"search_term"</span>:         <span class="str">"engineer"</span>,
@@ -752,8 +588,8 @@ jobs.forEach(j => console.log(j.title, j.company));</div>
 </div>
 
 <script>
-  function toggleCard(id) {
-    document.getElementById(id).classList.toggle('open');
+  function toggleEP(header) {
+    header.parentElement.classList.toggle('open');
   }
 
   function switchTab(btn, group, tab) {
@@ -767,35 +603,51 @@ jobs.forEach(j => console.log(j.title, j.company));</div>
 
   function copyCode(btn) {
     const block = btn.parentElement;
-    const text = block.innerText.replace(/^Copy\n?/, '').trim();
+    const text  = block.innerText.replace(/^Copy\n?/, '').trim();
     navigator.clipboard.writeText(text).then(() => {
       btn.textContent = 'Copied!';
       setTimeout(() => btn.textContent = 'Copy', 1500);
     });
   }
 
-  // Active TOC link on scroll
+  // Scroll reveal
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('vis'); obs.unobserve(e.target); }
+    });
+  }, { threshold: 0.08 });
+  document.querySelectorAll('.reveal, .endpoint-card').forEach(el => obs.observe(el));
+
+  // Scrollspy TOC
   const tocLinks = document.querySelectorAll('.toc-link');
-  const observerTargets = document.querySelectorAll('.section:not(#ep-jobs), .endpoint-card[id]');
-  const observer = new IntersectionObserver(entries => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        const id = entry.target.id;
+  const targets  = [...document.querySelectorAll('.section[id], .endpoint-card[id]')];
+  const spyObs   = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
         tocLinks.forEach(l => l.classList.remove('active'));
-        const active = document.querySelector(`.toc-link[href="#${id}"]`);
-        if (active) active.classList.add('active');
+        const a = document.querySelector(`.toc-link[href="#${e.target.id}"]`);
+        if (a) a.classList.add('active');
       }
     });
   }, { rootMargin: '-10% 0px -75% 0px' });
-  observerTargets.forEach(s => observer.observe(s));
+  targets.forEach(t => spyObs.observe(t));
 
-  // ── Dark mode ──────────────────────────────────────────────────────────────
-  (function(){
+  // Dark mode
+  (function() {
     const root = document.documentElement;
     const btn  = document.getElementById('darkToggle');
-    function apply(on){ root.classList.toggle('dark', on); btn.innerHTML = on ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>'; }
+    const moon = document.getElementById('iconMoon');
+    const sun  = document.getElementById('iconSun');
+    function apply(on) {
+      root.classList.toggle('dark', on);
+      moon.style.display = on ? 'none' : 'block';
+      sun.style.display  = on ? 'block' : 'none';
+    }
     apply(localStorage.getItem('theme') === 'dark');
-    btn.addEventListener('click', function(){ const d = !root.classList.contains('dark'); apply(d); localStorage.setItem('theme', d ? 'dark' : 'light'); });
+    btn.addEventListener('click', () => {
+      const d = !root.classList.contains('dark');
+      apply(d); localStorage.setItem('theme', d ? 'dark' : 'light');
+    });
   })();
 </script>
 </body>
