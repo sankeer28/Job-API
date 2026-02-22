@@ -6,3 +6,4 @@ openpyxl
 python-multipart
 pydantic
 httpx
+python-dateutil

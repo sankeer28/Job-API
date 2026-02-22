@@ -339,7 +339,7 @@
     <section class="section reveal" id="overview">
       <h2 class="section-title">Overview</h2>
       <p>Job API is a REST service that aggregates job postings from multiple boards in a single request. It wraps <a href="https://github.com/Bunsly/JobSpy" target="_blank">python-jobspy</a> and exposes it as a clean JSON API deployable on Vercel.</p>
-      <p>Supported job boards: <code>indeed</code>, <code>linkedin</code>, <code>glassdoor</code>, <code>zip_recruiter</code>, <code>google</code>, <code>bayt</code>, <code>naukri</code>, <code>bdjobs</code>, <code>remoteok</code>, <code>arbeitnow</code>.</p>
+      <p>Supported job boards: <code>indeed</code>, <code>linkedin</code>, <code>glassdoor</code>, <code>zip_recruiter</code>, <code>google</code>, <code>bayt</code>, <code>naukri</code>, <code>bdjobs</code>, <code>remoteok</code>, <code>arbeitnow</code>, <code>remotive</code>, <code>jobicy</code>.</p>
       <p>Want to test the API interactively? Use the <a href="/playground.html">Playground</a> — a built-in API client that lets you send requests and inspect responses in real time.</p>
     </section>
 
@@ -412,7 +412,7 @@ data.jobs.forEach(j => console.log(j.title, <span class="str">"@"</span>, j.comp
             <table class="param-table">
               <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr>
               <tr><td class="p-name">search_term</td><td><span class="p-type">string</span></td><td class="p-opt">optional</td><td>—</td><td class="p-desc">Keyword query. Supports <code>-negative</code> and <code>"exact phrase"</code>.</td></tr>
-              <tr><td class="p-name">site_name</td><td><span class="p-type">string</span></td><td class="p-opt">optional</td><td><span class="p-def">all</span></td><td class="p-desc">Comma-separated boards: <code>indeed</code>, <code>linkedin</code>, <code>glassdoor</code>, <code>zip_recruiter</code>, <code>google</code>, <code>bayt</code>, <code>naukri</code>, <code>bdjobs</code>, <code>remoteok</code>, <code>arbeitnow</code>.</td></tr>
+              <tr><td class="p-name">site_name</td><td><span class="p-type">string</span></td><td class="p-opt">optional</td><td><span class="p-def">all</span></td><td class="p-desc">Comma-separated boards: <code>indeed</code>, <code>linkedin</code>, <code>glassdoor</code>, <code>zip_recruiter</code>, <code>google</code>, <code>bayt</code>, <code>naukri</code>, <code>bdjobs</code>, <code>remoteok</code>, <code>arbeitnow</code>, <code>remotive</code>, <code>jobicy</code>.</td></tr>
               <tr><td class="p-name">location</td><td><span class="p-type">string</span></td><td class="p-opt">optional</td><td>—</td><td class="p-desc">City, state, country, or any location string.</td></tr>
               <tr><td class="p-name">country_indeed</td><td><span class="p-type">string</span></td><td class="p-opt">optional</td><td><span class="p-def">USA</span></td><td class="p-desc">Country filter for Indeed and Glassdoor. E.g. <code>UK</code>, <code>Canada</code>.</td></tr>
               <tr><td class="p-name">results_wanted</td><td><span class="p-type">integer</span></td><td class="p-opt">optional</td><td><span class="p-def">15</span></td><td class="p-desc">Number of results per site (max ~1000).</td></tr>

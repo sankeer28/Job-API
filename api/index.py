@@ -6,12 +6,15 @@ Vercel:     vercel.json routes everything here automatically.
 """
 
 import datetime
+import html as _html
 import io
 import math
 import os
 import sys
 import time
 from typing import Any, List, Optional
+
+import dateutil.parser as _dp
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -39,7 +42,7 @@ app.add_middleware(
 # ── Constants ─────────────────────────────────────────────────────────────────
 
 JOBSPY_SITES  = {"linkedin", "indeed", "zip_recruiter", "glassdoor", "google", "bayt", "bdjobs", "naukri"}
-CUSTOM_SITES  = {"remoteok", "arbeitnow"}
+CUSTOM_SITES  = {"remoteok", "arbeitnow", "remotive", "jobicy"}
 VALID_SITES   = JOBSPY_SITES | CUSTOM_SITES
 VALID_TYPES   = {None, "fulltime", "parttime", "internship", "contract"}
 VALID_FORMATS = {"markdown", "html"}
@@ -369,6 +372,201 @@ async def scrape_arbeitnow(params: dict) -> List[dict]:
     return results
 
 
+async def scrape_remotive(params: dict) -> List[dict]:
+    """Fetch jobs from Remotive public API (https://remotive.com/api/remote-jobs)."""
+    is_remote = _bool(params.get("is_remote"))
+    if is_remote is False:
+        return []  # Remotive is remote-only
+
+    search_term    = params.get("search_term", "") or ""
+    results_wanted = _int(params.get("results_wanted"), 15)
+    hours_old      = _int(params.get("hours_old"))
+    offset         = _int(params.get("offset"), 0)
+
+    query: dict = {"limit": offset + results_wanted}
+    if search_term:
+        query["search"] = search_term
+
+    async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
+        resp = await client.get(
+            "https://remotive.com/api/remote-jobs",
+            params=query,
+            headers={"Accept": "application/json"},
+        )
+        resp.raise_for_status()
+        data = resp.json()
+
+    jobs_raw = data.get("jobs", [])
+
+    # Remotive has no API-level location param — post-filter on candidate_required_location
+    country  = (params.get("country_indeed") or "").strip()
+    location = (params.get("location")       or "").strip()
+    loc_filter = (country or location).lower()
+    if loc_filter:
+        jobs_raw = [
+            j for j in jobs_raw
+            if loc_filter in (j.get("candidate_required_location") or "").lower()
+            or "worldwide" in (j.get("candidate_required_location") or "").lower()
+            or "anywhere"  in (j.get("candidate_required_location") or "").lower()
+        ]
+
+    if hours_old:
+        cutoff = time.time() - hours_old * 3600
+        def _pub_ts(j):
+            try:
+                return _dp.parse(j.get("publication_date", "")).timestamp()
+            except Exception:
+                return 0
+        jobs_raw = [j for j in jobs_raw if _pub_ts(j) >= cutoff]
+
+    jobs_raw = jobs_raw[offset: offset + results_wanted]
+
+    # job_type mapping: remotive uses "full_time", "contract", etc.
+    type_map = {"full_time": "fulltime", "part_time": "parttime",
+                "contract": "contract", "freelance": "contract",
+                "internship": "internship", "other": None}
+
+    results = []
+    for j in jobs_raw:
+        date_posted = None
+        if j.get("publication_date"):
+            try:
+                date_posted = j["publication_date"][:10]
+            except Exception:
+                pass
+
+        jt = type_map.get((j.get("job_type") or "").lower())
+
+        loc_str = j.get("candidate_required_location") or ""
+
+        results.append({
+            "title":            j.get("title") or None,
+            "company":          j.get("company_name") or None,
+            "site":             "remotive",
+            "job_url":          j.get("url") or None,
+            "location":         {"city": loc_str or None, "state": None, "country": None},
+            "is_remote":        True,
+            "job_type":         jt,
+            "job_level":        None,
+            "date_posted":      date_posted,
+            "salary":           None,
+            "description":      j.get("description") or None,
+            "emails":           None,
+            "skills":           j.get("tags") or [],
+            "company_url":      None,
+            "company_industry": j.get("category") or None,
+        })
+    return results
+
+
+async def scrape_jobicy(params: dict) -> List[dict]:
+    """Fetch jobs from Jobicy public API (https://jobicy.com/api/v2/remote-jobs)."""
+    is_remote = _bool(params.get("is_remote"))
+    if is_remote is False:
+        return []  # Jobicy is remote-only
+
+    search_term    = params.get("search_term", "") or ""
+    results_wanted = _int(params.get("results_wanted"), 15)
+    hours_old      = _int(params.get("hours_old"))
+    offset         = _int(params.get("offset"), 0)
+    job_type       = params.get("job_type")
+
+    # Jobicy caps count at 50
+    query: dict = {"count": min(offset + results_wanted, 50)}
+    if search_term:
+        query["tag"] = search_term
+    # geo expects a plain country name (e.g. "usa", "germany").
+    # Prefer country_indeed (designed for this), otherwise take the last
+    # comma-separated token from location ("New York, NY, USA" → "usa").
+    country_indeed = (params.get("country_indeed") or "").strip()
+    location       = (params.get("location")       or "").strip()
+    geo = country_indeed or (location.split(",")[-1].strip() if location else "")
+    if geo:
+        query["geo"] = geo.lower()
+
+    async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
+        resp = await client.get(
+            "https://jobicy.com/api/v2/remote-jobs",
+            params=query,
+            headers={"Accept": "application/json"},
+        )
+        resp.raise_for_status()
+        data = resp.json()
+
+    jobs_raw = data.get("jobs", [])
+
+    if hours_old:
+        cutoff = time.time() - hours_old * 3600
+        def _pub_ts2(j):
+            try:
+                return _dp.parse(j.get("pubDate", "")).timestamp()
+            except Exception:
+                return 0
+        jobs_raw = [j for j in jobs_raw if _pub_ts2(j) >= cutoff]
+
+    # map jobType array → our job_type enum
+    type_map = {"full-time": "fulltime", "part-time": "parttime",
+                "freelance": "contract", "contract": "contract",
+                "internship": "internship"}
+    if job_type:
+        jobs_raw = [j for j in jobs_raw
+                    if any(type_map.get((jt or "").lower()) == job_type
+                           for jt in j.get("jobType", []))]
+
+    jobs_raw = jobs_raw[offset: offset + results_wanted]
+
+    results = []
+    for j in jobs_raw:
+        date_posted = None
+        if j.get("pubDate"):
+            try:
+                date_posted = j["pubDate"][:10]
+            except Exception:
+                pass
+
+        jts = " ".join(j.get("jobType", [])).lower()
+        jt = None
+        if "full" in jts:      jt = "fulltime"
+        elif "part" in jts:    jt = "parttime"
+        elif "intern" in jts:  jt = "internship"
+        elif "contract" in jts or "freelance" in jts: jt = "contract"
+
+        salary = None
+        if j.get("salaryMin") or j.get("salaryMax"):
+            salary = {
+                "min_amount": j.get("salaryMin") or None,
+                "max_amount": j.get("salaryMax") or None,
+                "interval":   j.get("salaryPeriod") or "yearly",
+                "currency":   j.get("salaryCurrency") or "USD",
+            }
+
+        industry_list = j.get("jobIndustry") or []
+        industry = industry_list[0] if industry_list else None
+
+        loc_str = j.get("jobGeo") or ""
+
+        title = _html.unescape(_html.unescape(j.get("jobTitle") or ""))
+
+        results.append({
+            "title":            title or None,
+            "company":          j.get("companyName") or None,
+            "site":             "jobicy",
+            "job_url":          j.get("url") or None,
+            "location":         {"city": loc_str or None, "state": None, "country": None},
+            "is_remote":        True,
+            "job_type":         jt,
+            "job_level":        j.get("jobLevel") or None,
+            "date_posted":      date_posted,
+            "salary":           salary,
+            "description":      j.get("jobDescription") or None,
+            "emails":           None,
+            "skills":           [],
+            "company_url":      None,
+            "company_industry": industry,
+        })
+    return results
+
+
 def _csv_response(df: pd.DataFrame) -> StreamingResponse:
     buf = io.StringIO()
     df.to_csv(buf, index=False)
@@ -431,6 +629,10 @@ async def _run_scrape(params: dict):
                 all_records.extend(await scrape_remoteok(params))
             elif site == "arbeitnow":
                 all_records.extend(await scrape_arbeitnow(params))
+            elif site == "remotive":
+                all_records.extend(await scrape_remotive(params))
+            elif site == "jobicy":
+                all_records.extend(await scrape_jobicy(params))
         except Exception:
             pass  # don't fail the whole request if one custom source errors
 
