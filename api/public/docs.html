@@ -21,8 +21,8 @@
       --green:   #34C759;
       --red:     #FF3B30;
       --orange:  #FF9500;
-      --r:       18px;
-      --rs:      10px;
+      --r: 0;
+      --rs: 0;
       --font:    'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
       --mono:    'JetBrains Mono', monospace;
     }
@@ -59,7 +59,7 @@
       display: flex; align-items: center; gap: 8px;
     }
     .nav-logo-mark {
-      width: 28px; height: 28px; background: var(--blue); border-radius: 8px;
+      width: 28px; height: 28px; background: var(--blue); border-radius: 0;
       display: flex; align-items: center; justify-content: center;
     }
     .nav-links {
@@ -68,7 +68,7 @@
     }
     .nav-link {
       font-size: 13px; font-weight: 500; color: var(--sub);
-      text-decoration: none; padding: 5px 14px; border-radius: 20px;
+      text-decoration: none; padding: 5px 14px; border-radius: 0;
       transition: background .15s, color .15s;
     }
     .nav-link:hover { background: rgba(0,0,0,.04); color: var(--text); }
@@ -76,7 +76,7 @@
     .nav-link.active { color: var(--text); font-weight: 600; }
     .dark-toggle {
       width: 32px; height: 32px; border: none; background: transparent;
-      border-radius: 50%; cursor: pointer; color: var(--sub);
+      border-radius: 0; cursor: pointer; color: var(--sub);
       display: flex; align-items: center; justify-content: center;
       transition: background .15s, color .15s;
     }
@@ -100,7 +100,7 @@
     .toc-link {
       display: block; font-size: 13.5px; color: var(--sub);
       text-decoration: none; padding: 5px 10px;
-      border-radius: var(--rs); border-left: 2px solid transparent;
+      border-radius: 0; border-left: 2px solid transparent;
       transition: background .12s, color .12s, border-color .12s;
       font-weight: 400;
     }
@@ -130,7 +130,7 @@
     .method {
       display: inline-flex; align-items: center;
       font-size: 10.5px; font-weight: 700; letter-spacing: .5px;
-      padding: 4px 9px; border-radius: 7px; flex-shrink: 0;
+      padding: 4px 9px; border-radius: 0; flex-shrink: 0;
     }
     .method.get  { background: rgba(52,199,89,.12);  color: #1a7a35; }
     .method.post { background: rgba(0,113,227,.1);   color: var(--blue); }
@@ -140,7 +140,7 @@
     /* ── Endpoint cards ── */
     .endpoint-card {
       background: var(--surface);
-      border-radius: 18px;
+      border-radius: 0;
       box-shadow: 0 1px 4px rgba(0,0,0,.05), 0 0 0 1px var(--border);
       margin-bottom: 14px; overflow: hidden; scroll-margin-top: 80px;
       opacity: 0; transform: translateY(18px);
@@ -185,11 +185,11 @@
     .param-table tr:hover td { background: rgba(0,0,0,.015); }
     html.dark .param-table tr:hover td { background: rgba(255,255,255,.025); }
     .p-name { font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--text); }
-    .p-type { font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 5px; background: var(--bg); color: var(--sub); white-space: nowrap; }
+    .p-type { font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 0; background: var(--bg); color: var(--sub); white-space: nowrap; }
     .p-opt  { font-size: 11px; color: var(--sub); }
     .p-req  { font-size: 11px; font-weight: 600; color: var(--red); }
     .p-desc { color: var(--sub); line-height: 1.55; }
-    .p-def  { font-family: var(--mono); font-size: 12px; background: rgba(0,113,227,.08); color: var(--blue); padding: 2px 6px; border-radius: 4px; }
+    .p-def  { font-family: var(--mono); font-size: 12px; background: rgba(0,113,227,.08); color: var(--blue); padding: 2px 6px; border-radius: 0; }
 
     /* ── Code tabs ── */
     .code-tabs { margin-top: 10px; }
@@ -197,14 +197,14 @@
     .tab-btn {
       font-size: 12px; font-weight: 500; padding: 6px 14px;
       border: 1px solid var(--border); border-bottom: none;
-      border-radius: 8px 8px 0 0; background: var(--bg); color: var(--sub);
+      border-radius: 0; background: var(--bg); color: var(--sub);
       cursor: pointer; font-family: var(--font); transition: background .12s, color .12s;
     }
     .tab-btn.active { background: #111; color: #fff; border-color: #111; }
     html.dark .tab-btn.active { background: #E0E0E0; color: #111; border-color: #E0E0E0; }
 
     .code-block {
-      background: #111; border-radius: 0 var(--rs) var(--rs) var(--rs);
+      background: #111; border-radius: 0;
       padding: 18px 20px; font-family: var(--mono); font-size: 13px;
       line-height: 1.72; color: #D8D8D8; overflow-x: auto; white-space: pre;
       border: 1px solid rgba(255,255,255,.07); position: relative;
@@ -216,7 +216,7 @@
     .code-block .num { color: #79C0FF; }
     .copy-btn {
       position: absolute; top: 10px; right: 12px;
-      font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 6px;
+      font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 0;
       border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.07); color: #999;
       cursor: pointer; font-family: var(--font); transition: background .12s, color .12s;
     }
@@ -224,7 +224,7 @@
 
     /* ── Schema box ── */
     .schema-box {
-      background: var(--surface); border-radius: 18px;
+      background: var(--surface); border-radius: 0;
       box-shadow: 0 1px 4px rgba(0,0,0,.05), 0 0 0 1px var(--border);
       padding: 20px 24px;
     }
@@ -237,12 +237,12 @@
     html.dark .schema-field { border-bottom-color: rgba(255,255,255,.04); }
     .schema-field:last-child { border-bottom: none; }
     .sf-name { font-family: var(--mono); font-size: 13px; font-weight: 500; }
-    .sf-type { font-size: 12px; background: var(--bg); color: var(--sub); padding: 2px 8px; border-radius: 5px; text-align: center; font-weight: 500; align-self: center; }
+    .sf-type { font-size: 12px; background: var(--bg); color: var(--sub); padding: 2px 8px; border-radius: 0; text-align: center; font-weight: 500; align-self: center; }
     .sf-desc { color: var(--sub); line-height: 1.55; }
 
     /* ── Callout ── */
     .callout {
-      display: flex; gap: 12px; padding: 14px 18px; border-radius: var(--rs);
+      display: flex; gap: 12px; padding: 14px 18px; border-radius: 0;
       font-size: 14px; line-height: 1.65; margin-bottom: 16px;
     }
     .callout.info  { background: rgba(0,113,227,.07); border-left: 3px solid var(--blue); color: var(--text); }
@@ -255,7 +255,7 @@
     code {
       font-family: var(--mono); font-size: 12.5px;
       background: rgba(0,0,0,.06); border: 1px solid rgba(0,0,0,.08);
-      padding: 1px 6px; border-radius: 5px; color: var(--text);
+      padding: 1px 6px; border-radius: 0; color: var(--text);
     }
     html.dark code { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.1); }
 
@@ -263,7 +263,7 @@
     .base-url-chip {
       display: inline-flex; align-items: center; gap: 8px;
       background: #111; color: #9ECA7F; font-family: var(--mono);
-      font-size: 14px; padding: 11px 20px; border-radius: 12px; margin-bottom: 16px;
+      font-size: 14px; padding: 11px 20px; border-radius: 0; margin-bottom: 16px;
     }
     html.dark .base-url-chip { background: #0D0D0D; }
 
@@ -277,7 +277,7 @@
     }
     ::-webkit-scrollbar { width: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(128,128,128,.25); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb { background: rgba(128,128,128,.25); border-radius: 0; }
   </style>
   <script>if(localStorage.getItem('theme')==='dark')document.documentElement.classList.add('dark');</script>
 </head>
@@ -486,7 +486,7 @@ resp = requests.post(
         <div class="endpoint-body">
           <div class="endpoint-body-inner">
             <p class="endpoint-note">Returns a simple status object. Useful for uptime monitoring and deployment checks.</p>
-            <div class="code-block" style="margin-top:12px; border-radius:var(--rs)"><button class="copy-btn" onclick="copyCode(this)">Copy</button><span class="cm">// Response</span>
+            <div class="code-block" style="margin-top:12px; border-radius: 0"><button class="copy-btn" onclick="copyCode(this)">Copy</button><span class="cm">// Response</span>
 {
   <span class="str">"status"</span>: <span class="str">"ok"</span>,
   <span class="str">"service"</span>: <span class="str">"Job API"</span>,
