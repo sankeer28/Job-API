@@ -28,7 +28,7 @@ from pydantic import BaseModel, Field
 
 app = FastAPI(
     title="Job API",
-    description="Aggregate job postings from LinkedIn, Indeed, Glassdoor, ZipRecruiter, Google Jobs, Bayt, Naukri and more via python-jobspy.",
+    description="Aggregate job postings from LinkedIn, Indeed, Naukri, RemoteOK, Arbeitnow, Remotive, and Jobicy.",
     version="2.0.0",
 )
 
@@ -41,7 +41,7 @@ app.add_middleware(
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
-JOBSPY_SITES  = {"linkedin", "indeed", "zip_recruiter", "glassdoor", "google", "bayt", "bdjobs", "naukri"}
+JOBSPY_SITES  = {"linkedin", "indeed", "naukri"}
 CUSTOM_SITES  = {"remoteok", "arbeitnow", "remotive", "jobicy"}
 VALID_SITES   = JOBSPY_SITES | CUSTOM_SITES
 VALID_TYPES   = {None, "fulltime", "parttime", "internship", "contract"}
@@ -162,7 +162,6 @@ def df_to_safe_records(df: pd.DataFrame) -> List[dict]:
 def _build_kwargs(params: dict) -> dict:
     """Turn a flat params dict into scrape_jobs() kwargs."""
     site_name = _csv_list(params.get("site_name")) or sorted(JOBSPY_SITES)
-
     invalid_sites = [s for s in site_name if s not in JOBSPY_SITES]
     if invalid_sites:
         raise HTTPException(400, f"Unknown site(s): {invalid_sites}. Valid: {sorted(JOBSPY_SITES)}")
