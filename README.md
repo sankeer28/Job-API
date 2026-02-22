@@ -1,31 +1,7 @@
-# JobSpy API
+# Job API
 
-A Vercel serverless API that wraps [python-jobspy](https://github.com/speedyapply/JobSpy) and returns job postings as JSON.
+A Vercel serverless API that wraps [jobspy](https://github.com/speedyapply/JobSpy) and returns job postings as JSON.
 
-Scrapes **LinkedIn, Indeed, Glassdoor, ZipRecruiter, Google Jobs, Bayt, and BDJobs** in a single request.
-
----
-
-## Deploy to Vercel
-
-```bash
-npm i -g vercel
-cd jobspy-api
-vercel
-```
-
-> **Timeout note:** The Hobby plan allows up to **60 seconds** per serverless function (configured in `vercel.json`). For large scrapes, upgrade to Pro or self-host.
-
----
-
-## Local development
-
-```bash
-pip install -r requirements.txt
-python api/index.py          # → http://localhost:8000
-```
-
----
 
 ## Endpoints
 
@@ -76,7 +52,7 @@ python api/index.py          # → http://localhost:8000
 
 ### GET
 ```
-/api/jobs?search_term=software+engineer&location=San+Francisco,+CA&site_name=indeed,linkedin&results_wanted=20&hours_old=72&country_indeed=USA
+https://j0b-api.vercel.app/api/jobs?site_name=indeed&search_term=internship&location=toronto&distance=50&results_wanted=2&description_format=markdown&offset=0&linkedin_fetch_description=false&enforce_annual_salary=false
 ```
 
 ### POST (JSON body)
@@ -136,13 +112,6 @@ python api/index.py          # → http://localhost:8000
 }
 ```
 
----
-
-## Supported countries (Indeed / Glassdoor)
-
-Argentina, Australia, Austria, Bahrain, Belgium, Brazil, Canada, Chile, China, Colombia, Costa Rica, Czech Republic, Denmark, Ecuador, Egypt, Finland, France, Germany, Greece, Hong Kong, Hungary, India, Indonesia, Ireland, Israel, Italy, Japan, Kuwait, Luxembourg, Malaysia, Mexico, Morocco, Netherlands, New Zealand, Nigeria, Norway, Oman, Pakistan, Panama, Peru, Philippines, Poland, Portugal, Qatar, Romania, Saudi Arabia, Singapore, South Africa, South Korea, Spain, Sweden, Switzerland, Taiwan, Thailand, Turkey, Ukraine, United Arab Emirates, UK, USA, Uruguay, Venezuela, Vietnam
-
-*Countries marked with \* also support Glassdoor.*
 
 ---
 
@@ -152,3 +121,4 @@ Argentina, Australia, Austria, Bahrain, Belgium, Brazil, Canada, Chile, China, C
 - **LinkedIn** rate-limits around the 10th page per IP. Use `proxies` for large scrapes.
 - All boards cap at approximately **1 000 results** per search.
 - Response code `429` means the job board has blocked the IP. Wait, or rotate proxies.
+
