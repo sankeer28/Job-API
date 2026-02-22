@@ -25,6 +25,39 @@
       --shadow-card: 0 1px 6px rgba(0,0,0,.06), 0 4px 24px rgba(0,0,0,.06);
     }
 
+    /* ── Dark mode ── */
+    html.dark {
+      --bg:          #1C1C1E;
+      --surface:     #2C2C2E;
+      --border:      #3A3A3C;
+      --text:        #F5F5F7;
+      --subtext:     #8E8E93;
+      --tag-bg:      rgba(0,122,255,.18);
+      --tag-text:    #64B0FF;
+      --shadow-card: 0 1px 6px rgba(0,0,0,.4), 0 4px 24px rgba(0,0,0,.4);
+    }
+    html.dark nav {
+      background: rgba(28,28,30,.88);
+      border-bottom-color: rgba(255,255,255,.08);
+    }
+    html.dark input, html.dark textarea, html.dark select {
+      background: #3A3A3C; color: var(--text); border-color: var(--border);
+    }
+    html.dark input::placeholder, html.dark textarea::placeholder { color: var(--subtext); }
+    .dark-toggle {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 5px 10px;
+      cursor: pointer;
+      font-size: 15px;
+      line-height: 1;
+      color: var(--subtext);
+      transition: background .15s;
+      margin-left: 4px;
+    }
+    .dark-toggle:hover { background: var(--tag-bg); }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
       background: var(--bg);
@@ -439,6 +472,8 @@
       .res-panel { min-height: 400px; }
     }
   </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script>if(localStorage.getItem('theme')==='dark')document.documentElement.classList.add('dark');</script>
 </head>
 <body>
 
@@ -449,6 +484,7 @@
     <a href="/docs.html" class="nav-link">Docs</a>
     <a href="/playground.html" class="nav-link active">Playground</a>
   </div>
+  <button class="dark-toggle" id="darkToggle" title="Toggle dark mode"><i class="fa-solid fa-moon"></i></button>
 </nav>
 
 <div class="pg-layout">
@@ -890,6 +926,15 @@
   document.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') sendRequest();
   });
+
+  // ── Dark mode ──────────────────────────────────────────────────────────────
+  (function(){
+    const root = document.documentElement;
+    const btn  = document.getElementById('darkToggle');
+    function apply(on){ root.classList.toggle('dark', on); btn.innerHTML = on ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>'; }
+    apply(localStorage.getItem('theme') === 'dark');
+    btn.addEventListener('click', function(){ const d = !root.classList.contains('dark'); apply(d); localStorage.setItem('theme', d ? 'dark' : 'light'); });
+  })();
 </script>
 </body>
 </html>
