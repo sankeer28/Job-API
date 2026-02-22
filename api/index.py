@@ -5,14 +5,17 @@ Local dev:  uvicorn api.index:app --reload --port 8000
 Vercel:     vercel.json routes everything here automatically.
 """
 
+import datetime
 import io
 import math
 import os
 import sys
+import time
 from typing import Any, List, Optional
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import httpx
 import pandas as pd
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -35,7 +38,9 @@ app.add_middleware(
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
-VALID_SITES   = {"linkedin", "indeed", "zip_recruiter", "glassdoor", "google", "bayt", "bdjobs", "naukri"}
+JOBSPY_SITES  = {"linkedin", "indeed", "zip_recruiter", "glassdoor", "google", "bayt", "bdjobs", "naukri"}
+CUSTOM_SITES  = {"remoteok", "arbeitnow"}
+VALID_SITES   = JOBSPY_SITES | CUSTOM_SITES
 VALID_TYPES   = {None, "fulltime", "parttime", "internship", "contract"}
 VALID_FORMATS = {"markdown", "html"}
 
@@ -153,12 +158,11 @@ def df_to_safe_records(df: pd.DataFrame) -> List[dict]:
 
 def _build_kwargs(params: dict) -> dict:
     """Turn a flat params dict into scrape_jobs() kwargs."""
-    site_name = _csv_list(params.get("site_name")) or \
-                ["linkedin", "indeed", "zip_recruiter", "glassdoor", "google", "bayt", "bdjobs", "naukri"]
+    site_name = _csv_list(params.get("site_name")) or sorted(JOBSPY_SITES)
 
-    invalid_sites = [s for s in site_name if s not in VALID_SITES]
+    invalid_sites = [s for s in site_name if s not in JOBSPY_SITES]
     if invalid_sites:
-        raise HTTPException(400, f"Unknown site(s): {invalid_sites}. Valid: {sorted(VALID_SITES)}")
+        raise HTTPException(400, f"Unknown site(s): {invalid_sites}. Valid: {sorted(JOBSPY_SITES)}")
 
     job_type          = params.get("job_type") or None
     description_format = params.get("description_format") or "markdown"
@@ -200,6 +204,171 @@ def _build_kwargs(params: dict) -> dict:
     return kwargs, site_name
 
 
+async def scrape_remoteok(params: dict) -> List[dict]:
+    """Fetch jobs from the RemoteOK public API (https://remoteok.com/api)."""
+    is_remote = _bool(params.get("is_remote"))
+    if is_remote is False:
+        return []  # RemoteOK only has remote jobs
+    search_term   = params.get("search_term", "") or ""
+    results_wanted = _int(params.get("results_wanted"), 15)
+    hours_old     = _int(params.get("hours_old"))
+    offset        = _int(params.get("offset"), 0)
+
+    url = "https://remoteok.com/api"
+    if search_term:
+        url = f"https://remoteok.com/api?tag={search_term.replace(' ', '+')}"
+
+    headers = {"User-Agent": "Mozilla/5.0 (compatible; Job-API/2.0)"}
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        resp = await client.get(url, headers=headers)
+        resp.raise_for_status()
+        data = resp.json()
+
+    # First element is a legal-notice object — skip anything without "position"
+    jobs_raw = [item for item in data if "position" in item]
+
+    if hours_old:
+        cutoff = time.time() - hours_old * 3600
+        jobs_raw = [j for j in jobs_raw if j.get("epoch", 0) >= cutoff]
+
+    jobs_raw = jobs_raw[offset: offset + results_wanted]
+
+    results = []
+    for j in jobs_raw:
+        date_posted = None
+        if j.get("date"):
+            try:
+                date_posted = j["date"][:10]
+            except Exception:
+                pass
+
+        loc_str = j.get("location") or ""
+        salary = None
+        if j.get("salary_min") or j.get("salary_max"):
+            salary = {
+                "min_amount": j.get("salary_min") or None,
+                "max_amount": j.get("salary_max") or None,
+                "interval": "yearly",
+                "currency": "USD",
+            }
+
+        results.append({
+            "title":            j.get("position") or None,
+            "company":          j.get("company") or None,
+            "site":             "remoteok",
+            "job_url":          j.get("url") or j.get("apply_url") or None,
+            "location":         {"city": loc_str or None, "state": None, "country": None},
+            "is_remote":        True,
+            "job_type":         None,
+            "job_level":        None,
+            "date_posted":      date_posted,
+            "salary":           salary,
+            "description":      j.get("description") or None,
+            "emails":           None,
+            "skills":           j.get("tags") or [],
+            "company_url":      None,
+            "company_industry": None,
+        })
+    return results
+
+
+async def scrape_arbeitnow(params: dict) -> List[dict]:
+    """Fetch jobs from the Arbeitnow public API (https://arbeitnow.com/api/job-board-api)."""
+    search_term    = params.get("search_term", "") or ""
+    results_wanted = _int(params.get("results_wanted"), 15)
+    hours_old      = _int(params.get("hours_old"))
+    is_remote      = _bool(params.get("is_remote"))
+    job_type       = params.get("job_type")
+    offset         = _int(params.get("offset"), 0)
+
+    query_params: dict = {}
+    if search_term:       query_params["search"] = search_term
+    if is_remote is True: query_params["remote"] = "true"
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (compatible; Job-API/2.0)",
+        "Accept":     "application/json",
+    }
+
+    jobs_raw: List[dict] = []
+    page = 1
+    async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
+        while len(jobs_raw) < offset + results_wanted:
+            resp = await client.get(
+                "https://www.arbeitnow.com/api/job-board-api",
+                params={**query_params, "page": page},
+                headers=headers,
+            )
+            resp.raise_for_status()
+            data       = resp.json()
+            page_jobs  = data.get("data", [])
+            if not page_jobs:
+                break
+            jobs_raw.extend(page_jobs)
+            if not data.get("links", {}).get("next"):
+                break
+            page += 1
+            if page > 5:
+                break
+
+    if hours_old:
+        cutoff = time.time() - hours_old * 3600
+        jobs_raw = [j for j in jobs_raw if j.get("created_at", 0) >= cutoff]
+
+    if is_remote is False:
+        jobs_raw = [j for j in jobs_raw if not j.get("remote", False)]
+    elif is_remote is True:
+        jobs_raw = [j for j in jobs_raw if j.get("remote", False)]
+
+    if job_type:
+        type_map = {"fulltime": "full-time", "parttime": "part-time",
+                    "contract": "contract",  "internship": "intern"}
+        tf = type_map.get(job_type, job_type).lower()
+        jobs_raw = [j for j in jobs_raw
+                    if any(tf in (jt or "").lower() for jt in j.get("job_types", []))]
+
+    jobs_raw = jobs_raw[offset: offset + results_wanted]
+
+    results = []
+    for j in jobs_raw:
+        date_posted = None
+        if j.get("created_at"):
+            try:
+                date_posted = datetime.date.fromtimestamp(j["created_at"]).isoformat()
+            except Exception:
+                pass
+
+        jt = None
+        jts = " ".join(j.get("job_types", [])).lower()
+        if "full" in jts:
+            jt = "fulltime"
+        elif "part" in jts:
+            jt = "parttime"
+        elif "intern" in jts:
+            jt = "internship"
+        elif "contract" in jts or "freelance" in jts:
+            jt = "contract"
+
+        results.append({
+            "title":            j.get("title") or None,
+            "company":          j.get("company_name") or None,
+            "site":             "arbeitnow",
+            "job_url":          j.get("url") or None,
+            "location":         {"city": j.get("location") or None, "state": None, "country": None},
+            "is_remote":        j.get("remote", False),
+            "job_type":         jt,
+            "job_level":        None,
+            "date_posted":      date_posted,
+            "salary":           None,
+            "description":      j.get("description") or None,
+            "emails":           None,
+            "skills":           j.get("tags") or [],
+            "company_url":      None,
+            "company_industry": None,
+        })
+    return results
+
+
 def _csv_response(df: pd.DataFrame) -> StreamingResponse:
     buf = io.StringIO()
     df.to_csv(buf, index=False)
@@ -225,29 +394,57 @@ def _excel_response(df: pd.DataFrame) -> StreamingResponse:
 async def _run_scrape(params: dict):
     """Core scrape logic shared by GET and POST handlers."""
     output_format = (params.get("output_format") or "json").lower()
-    kwargs, site_name = _build_kwargs(params)
 
-    try:
-        df = scrape_jobs(**kwargs)
-    except Exception as exc:
-        raise HTTPException(500, detail={
-            "error":      str(exc),
-            "error_type": type(exc).__name__,
-            "parameters": {k: v for k, v in kwargs.items() if k != "verbose"},
-        })
+    # Validate and route requested sites
+    all_requested = _csv_list(params.get("site_name")) or sorted(VALID_SITES)
+    invalid = [s for s in all_requested if s not in VALID_SITES]
+    if invalid:
+        raise HTTPException(400, f"Unknown site(s): {invalid}. Valid: {sorted(VALID_SITES)}")
+
+    jobspy_requested = [s for s in all_requested if s in JOBSPY_SITES]
+    custom_requested = [s for s in all_requested if s in CUSTOM_SITES]
+
+    all_records: List[dict] = []
+    query_echo: dict = {}
+
+    # ── python-jobspy sites ───────────────────────────────────────────────────
+    if jobspy_requested:
+        jspy_params = {**params, "site_name": jobspy_requested}
+        kwargs, _ = _build_kwargs(jspy_params)
+        query_echo = {k: v for k, v in kwargs.items() if k != "verbose"}
+        try:
+            df = scrape_jobs(**kwargs)
+            if df is not None and not df.empty:
+                all_records.extend(df_to_safe_records(df))
+        except Exception as exc:
+            if not custom_requested:
+                raise HTTPException(500, detail={
+                    "error":      str(exc),
+                    "error_type": type(exc).__name__,
+                    "parameters": query_echo,
+                })
+
+    # ── custom / public-API sites ─────────────────────────────────────────────
+    for site in custom_requested:
+        try:
+            if site == "remoteok":
+                all_records.extend(await scrape_remoteok(params))
+            elif site == "arbeitnow":
+                all_records.extend(await scrape_arbeitnow(params))
+        except Exception:
+            pass  # don't fail the whole request if one custom source errors
+
+    if not query_echo:
+        query_echo = {k: v for k, v in params.items()
+                      if k != "output_format" and v is not None}
 
     if output_format == "csv":
-        return _csv_response(df if df is not None else pd.DataFrame())
+        return _csv_response(pd.DataFrame(all_records) if all_records else pd.DataFrame())
     if output_format == "excel":
-        return _excel_response(df if df is not None else pd.DataFrame())
+        return _excel_response(pd.DataFrame(all_records) if all_records else pd.DataFrame())
 
-    if df is None or df.empty:
-        return {"jobs": [], "count": 0, "sites": site_name,
-                "query": {k: v for k, v in kwargs.items() if k != "verbose"}}
-
-    records = df_to_safe_records(df)
-    return {"jobs": records, "count": len(records), "sites": site_name,
-            "query": {k: v for k, v in kwargs.items() if k != "verbose"}}
+    return {"jobs": all_records, "count": len(all_records),
+            "sites": all_requested, "query": query_echo}
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
