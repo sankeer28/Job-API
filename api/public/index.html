@@ -416,13 +416,16 @@
 
   <!-- Search Form -->
   <div class="form-card">
-    <div class="sec-label">Job Boards</div>
+    <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:14px;">
+      <div class="sec-label" style="margin-bottom:0">Job Boards</div>
+      <span style="font-size:12px; color:var(--sub);">&#9432;&nbsp; Only <strong style="color:var(--text); font-weight:600;">Indeed</strong> &amp; <strong style="color:var(--text); font-weight:600;">LinkedIn</strong> work reliably</span>
+    </div>
     <div class="sites-grid" id="sitesGrid">
       <label class="site-chip active"><input type="checkbox" value="indeed" checked><span class="chip-dot"></span>Indeed</label>
       <label class="site-chip active"><input type="checkbox" value="linkedin" checked><span class="chip-dot"></span>LinkedIn</label>
-      <label class="site-chip active"><input type="checkbox" value="glassdoor" checked><span class="chip-dot"></span>Glassdoor</label>
-      <label class="site-chip active"><input type="checkbox" value="zip_recruiter" checked><span class="chip-dot"></span>ZipRecruiter</label>
-      <label class="site-chip active"><input type="checkbox" value="google" checked><span class="chip-dot"></span>Google Jobs</label>
+      <label class="site-chip"><input type="checkbox" value="glassdoor"><span class="chip-dot"></span>Glassdoor</label>
+      <label class="site-chip"><input type="checkbox" value="zip_recruiter"><span class="chip-dot"></span>ZipRecruiter</label>
+      <label class="site-chip"><input type="checkbox" value="google"><span class="chip-dot"></span>Google Jobs</label>
       <label class="site-chip"><input type="checkbox" value="bayt"><span class="chip-dot"></span>Bayt</label>
       <label class="site-chip"><input type="checkbox" value="naukri"><span class="chip-dot"></span>Naukri</label>
       <label class="site-chip"><input type="checkbox" value="bdjobs"><span class="chip-dot"></span>BDJobs</label>
