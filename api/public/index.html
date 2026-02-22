@@ -118,31 +118,14 @@
       to   { transform: translateX(-50%) scale(1.08) translateY(-12px); }
     }
 
-    .hero-badge {
-      display: inline-flex; align-items: center; gap: 7px;
-      font-size: 12px; font-weight: 600; letter-spacing: .1px;
-      color: var(--blue); background: rgba(0,113,227,.08);
-      border: 1px solid rgba(0,113,227,.18); padding: 5px 16px; border-radius: 20px;
-      margin-bottom: 30px;
-      opacity: 0; animation: fadeUp .6s cubic-bezier(.22,1,.36,1) .1s forwards;
-    }
-    .badge-dot {
-      width: 6px; height: 6px; border-radius: 50%; background: var(--blue);
-      animation: badgePulse 2s ease-in-out infinite;
-    }
-    @keyframes badgePulse {
-      0%,100% { opacity: 1; transform: scale(1); }
-      50% { opacity: .5; transform: scale(.75); }
-    }
-
     .hero h1 {
-      font-size: clamp(46px, 7.5vw, 82px);
-      font-weight: 800; letter-spacing: -3px; line-height: 1.04;
+      font-size: clamp(38px, 5.5vw, 64px);
+      font-weight: 800; letter-spacing: -2.5px; line-height: 1.08;
       color: var(--text); margin-bottom: 24px;
     }
-    .hero-line { display: block; overflow: hidden; }
+    .hero-line { display: block; overflow: hidden; padding-bottom: 0.14em; margin-bottom: -0.14em; }
     .hero-line-inner {
-      display: block; opacity: 0; transform: translateY(56px);
+      display: block; opacity: 0; transform: translateY(40px);
       animation: lineReveal .85s cubic-bezier(.22,1,.36,1) forwards;
     }
     .hero-line:nth-child(1) .hero-line-inner { animation-delay: .22s; }
@@ -415,17 +398,13 @@
     <a href="/playground.html" class="nav-link">Playground</a>
   </div>
   <button class="dark-toggle" id="darkToggle" title="Toggle theme">
-    <svg id="iconMoon" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 9.5A6.5 6.5 0 017.5 3a6.5 6.5 0 100 13A6.5 6.5 0 0114 9.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+    <svg id="iconMoon" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2a4 4 0 0 0 6 6 6 6 0 1 1-6-6z" fill="currentColor"/></svg>
     <svg id="iconSun" width="16" height="16" viewBox="0 0 16 16" fill="none" style="display:none"><circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5v1M8 13.5v1M1.5 8h1M13.5 8h1M3.4 3.4l.7.7M11.9 11.9l.7.7M3.4 12.6l.7-.7M11.9 4.1l.7-.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
   </button>
 </nav>
 
 <!-- Hero -->
 <div class="hero">
-  <div class="hero-badge">
-    <div class="badge-dot"></div>
-    8 job boards &middot; Real-time aggregation
-  </div>
   <h1>
     <span class="hero-line"><span class="hero-line-inner">Find jobs across</span></span>
     <span class="hero-line"><span class="hero-line-inner"><span class="g-text">every board</span> at once.</span></span>
